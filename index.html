@@ -2,44 +2,60 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Final Connection v30</title>
+    <title>Gemini 1.5 Pro Connection</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="p-4 max-w-xl mx-auto bg-gray-100 flex items-center min-h-screen">
-    <div class="bg-white p-6 rounded-2xl shadow-xl border-t-8 border-blue-500 w-full">
-        <h1 class="font-bold text-gray-400 mb-6 text-center text-xs uppercase tracking-widest">v30 Model Fixed</h1>
-        <input type="password" id="apiKey" placeholder="＋ プロジェクトを作成 から作ったキーを貼る" class="w-full p-3 border rounded-xl mb-4 outline-none focus:border-blue-400">
-        <button onclick="testAI()" id="btn" class="w-full bg-blue-500 text-white py-4 rounded-xl font-bold hover:bg-blue-600 transition-all">今すぐ接続テスト</button>
+<body class="p-4 max-w-xl mx-auto bg-gray-50 flex items-center min-h-screen">
+    <div class="bg-white p-6 rounded-2xl shadow-xl border-t-8 border-orange-500 w-full">
+        <h1 class="font-bold text-gray-400 mb-4 text-center text-xs uppercase tracking-widest">Model: Gemini 1.5 Pro</h1>
+        
+        <input type="password" id="apiKey" placeholder="新しいプロジェクトで作ったキーを貼る" class="w-full p-3 border rounded-xl mb-4 outline-none focus:border-orange-400">
+        
+        <button onclick="connectPro()" id="btn" class="w-full bg-orange-500 text-white py-4 rounded-xl font-bold hover:bg-orange-600 transition-all shadow-lg">
+            Gemini 1.5 Pro で接続
+        </button>
+        
         <div id="st" class="mt-4 text-center text-[10px] font-bold text-gray-400 italic"></div>
-        <div id="res" class="mt-4 p-4 bg-blue-50 text-blue-700 rounded-xl text-sm hidden"></div>
+        <div id="res" class="mt-4 p-4 bg-orange-50 text-orange-800 rounded-xl text-sm hidden border border-orange-100"></div>
         <div id="err" class="mt-4 p-4 bg-red-50 text-red-500 rounded-xl text-xs hidden font-mono"></div>
     </div>
+
     <script>
-        async function testAI() {
+        async function connectPro() {
             const k = document.getElementById('apiKey').value;
             if(!k) return alert('キーを入力してください');
+            
             const btn = document.getElementById('btn');
             const st = document.getElementById('st');
             const res = document.getElementById('res');
             const err = document.getElementById('err');
-            btn.disabled = true; st.innerText = "Connecting..."; res.classList.add('hidden'); err.classList.add('hidden');
+            
+            btn.disabled = true;
+            st.innerText = "Connecting to Gemini 1.5 Pro...";
+            res.classList.add('hidden');
+            err.classList.add('hidden');
+
             try {
-                // モデル名を「gemini-1.5-flash-latest」に修正しました
-                const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${k}`, {
+                // モデル名を「gemini-1.5-pro」に直接指定
+                const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${k}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: "接続成功！と短く答えてください" }] }] })
+                    body: JSON.stringify({ contents: [{ parts: [{ text: "接続成功。1.5 Proが動いています、と答えてください。" }] }] })
                 });
+                
                 const d = await r.json();
                 if(d.error) throw new Error(d.error.message);
+                
                 res.innerText = d.candidates[0].content.parts[0].text;
                 res.classList.remove('hidden');
-                st.innerText = "SUCCESS!";
+                st.innerText = "SUCCESS (Gemini 1.5 Pro)";
             } catch (e) {
-                err.innerText = e.message;
+                err.innerText = "エラー: " + e.message;
                 err.classList.remove('hidden');
                 st.innerText = "FAILED";
-            } finally { btn.disabled = false; }
+            } finally {
+                btn.disabled = false;
+            }
         }
     </script>
 </body>
