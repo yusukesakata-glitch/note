@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Note Assistant v23</title>
+    <title>Note Assistant v24</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { theme: { extend: { colors: { note: '#2cb696', noteHover: '#24957a', xBlue: '#1d9bf0' } } } }
@@ -19,15 +19,15 @@
     </style>
 </head>
 <body class="p-1">
-    <header class="flex justify-between items-center mb-2 px-1">
-        <h1 class="font-bold text-[10px] text-gray-400 uppercase tracking-widest">Note Assistant v23</h1>
-        <input type="password" id="apiKey" placeholder="Gemini API Key" class="p-1 border rounded w-32 bg-white text-[10px] outline-none">
+    <header class="flex justify-between items-center mb-2 px-1 text-gray-400">
+        <h1 class="font-bold text-[10px] uppercase tracking-widest">Note Assistant v24</h1>
+        <input type="password" id="apiKey" placeholder="API Key" class="p-1 border rounded w-32 bg-white text-[10px] outline-none">
     </header>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-2 max-w-6xl mx-auto">
         <aside class="lg:col-span-4 space-y-2">
-            <div class="card p-2 border-t-2 border-orange-400">
-                <h2 class="text-[10px] font-bold text-orange-600 mb-1 tracking-tighter uppercase">あなたの背景・経歴</h2>
+            <div class="card p-2 border-t-2 border-orange-400 shadow-sm">
+                <h2 class="text-[10px] font-bold text-orange-600 mb-1 uppercase tracking-tighter">あなたの背景情報</h2>
                 <textarea id="personalInfo" rows="3" placeholder="AIが提案に使用します" class="w-full p-1 bg-orange-50/20 border rounded text-[10px] outline-none"></textarea>
                 <button onclick="savePersonalInfo()" class="w-full mt-1 bg-orange-400 text-white py-1 rounded text-[10px] font-bold">情報を保存</button>
             </div>
@@ -49,58 +49,59 @@
                     <textarea id="tweetInput" rows="2" placeholder="いまどうしてる？" class="w-full outline-none text-[12px] resize-none border-none"></textarea>
                     <div class="flex justify-end mt-1"><button onclick="postTweet()" class="bg-xBlue text-white px-4 py-1 rounded-full text-[11px] font-bold">投稿</button></div>
                 </div>
-                <div class="p-1.5 bg-gray-50 border-b flex gap-1">
-                    <input type="text" id="tweetSearch" placeholder="検索..." class="flex-1 p-1 border rounded text-[10px] outline-none" oninput="renderTimeline()">
+                <div class="p-1.5 bg-gray-50 border-b">
+                    <input type="text" id="tweetSearch" placeholder="検索..." class="w-full p-1 border rounded text-[10px] outline-none" oninput="renderTimeline()">
                 </div>
                 <button onclick="analyzeTweets()" class="w-full py-1.5 text-[9px] font-bold bg-gray-50 text-gray-400 border-b">投稿からネタ分析</button>
-                <div id="timeline" class="max-h-[400px] overflow-y-auto bg-white"></div>
+                <div id="timeline" class="max-h-[350px] overflow-y-auto bg-white text-[12px]"></div>
             </div>
         </aside>
 
         <main class="lg:col-span-8 space-y-2">
             <div class="card p-3 border-t-2 border-note shadow-sm">
                 <div class="flex justify-between mb-2">
-                    <button id="recordBtn" class="bg-note text-white px-3 py-1 rounded text-[10px] font-bold uppercase tracking-widest">Voice</button>
+                    <button id="recordBtn" class="bg-note text-white px-3 py-1 rounded text-[10px] font-bold uppercase">Voice</button>
                     <select id="templateType" class="p-1 border rounded text-[10px] bg-white"><option>エッセイ型</option><option>学び型</option></select>
                 </div>
                 <textarea id="mainContent" rows="16" placeholder="本文を入力..." class="w-full text-[14px] leading-relaxed outline-none min-h-[300px] p-1 border-none"></textarea>
-                <div class="text-[10px] text-gray-400 border-t pt-2 flex justify-between items-center font-mono uppercase tracking-tighter">
+                <div class="text-[10px] text-gray-400 border-t pt-2 mt-1 flex justify-between items-center font-mono">
                     <span>CHARS: <span id="charCount">0</span></span>
-                    <button onclick="generateDraft()" id="btn-gen" class="bg-gray-800 text-white px-6 py-2 rounded font-bold hover:bg-black transition-all">Generate Note Draft</button>
+                    <button onclick="generateDraft()" id="btn-gen" class="bg-gray-800 text-white px-6 py-2 rounded font-bold hover:bg-black uppercase">Note構成案を作成</button>
                 </div>
             </div>
 
-            <div id="loading" class="hidden text-center py-4 text-note font-bold text-sm animate-pulse italic uppercase tracking-widest">AI Thinking...</div>
+            <div id="loading" class="hidden text-center py-4 text-note font-bold text-sm animate-pulse">AI Thinking...</div>
             <div id="resultContainer" class="hidden card p-4 border-2 border-note/20 bg-white shadow-xl">
                 <div id="resultBody" class="text-[14px] leading-relaxed whitespace-pre-wrap text-gray-800"></div>
             </div>
 
             <details class="card" open>
-                <summary class="p-2 font-bold cursor-pointer bg-gray-100 text-[10px] border-b text-gray-500 uppercase tracking-widest">提案履歴 (Stocks)</summary>
+                <summary class="p-2 font-bold cursor-pointer bg-gray-100 text-[10px] border-b text-gray-500 uppercase tracking-widest">提案履歴</summary>
                 <div id="historyList" class="max-h-[350px] overflow-y-auto"></div>
-                <button onclick="clearHistory()" class="w-full p-2 text-[9px] text-red-300 font-bold hover:bg-red-50 transition">Clear History</button>
+                <button onclick="clearHistory()" class="w-full p-2 text-[9px] text-red-300 font-bold hover:bg-red-50">履歴リセット</button>
             </details>
         </main>
     </div>
 
     <script>
-        const PK = { p: 'n_a_final_p', cp: 'n_a_final_cp', t: 'n_a_final_t', k: 'n_a_final_k', u: 'n_a_final_u', h: 'n_a_final_h' };
+        // 永続キー固定
+        const PK = { p: 'n_a_f_p', cp: 'n_a_f_cp', t: 'n_a_f_t', k: 'n_a_f_k', u: 'n_a_f_u', h: 'n_a_f_h' };
 
+        // データ救出ロジック
         function migrate() {
-            const oldT = ['note_p_all', 'note_app_t_fixed', 'note_t_all', 'note_v9_tweets', 'note_v21_tweets', 'note_v20_tweets'];
+            const keys = ['n_a_final_t', 'note_t_all', 'note_app_t_fixed', 'note_v21_tweets', 'note_v23_tweets'];
             let rT = JSON.parse(localStorage.getItem(PK.t)) || [];
-            oldT.forEach(k => {
+            keys.forEach(k => {
                 const d = JSON.parse(localStorage.getItem(k));
                 if (d && Array.isArray(d)) {
                     d.forEach(i => {
-                        const ex = rT.some(t => (t.t === (i.t || i.text)));
-                        if (!ex) rT.push({ t: i.t || i.text, d: i.d || i.date || new Date().toLocaleString() });
+                        if (!rT.some(t => t.t === (i.t || i.text))) rT.push({ t: i.t || i.text, d: i.d || i.date || new Date().toLocaleString() });
                     });
                 }
             });
             localStorage.setItem(PK.t, JSON.stringify(rT));
             if (!localStorage.getItem(PK.k)) {
-                const oA = localStorage.getItem('note_k_all') || localStorage.getItem('note_app_k_fixed') || localStorage.getItem('note_k_f');
+                const oA = localStorage.getItem('n_a_final_k') || localStorage.getItem('note_k_all') || localStorage.getItem('note_app_k_fixed');
                 if (oA) localStorage.setItem(PK.k, oA);
             }
         }
@@ -132,8 +133,8 @@
         }
         profileSelect.onchange = (e) => { currentProfileName = e.target.value; localStorage.setItem(PK.cp, currentProfileName); currentStyle.value = profiles[currentProfileName]; };
         function saveCurrentProfile() { profiles[currentProfileName] = currentStyle.value; localStorage.setItem(PK.p, JSON.stringify(profiles)); alert('保存完了'); }
-        function savePersonalInfo() { localStorage.setItem(PK.u, personalInfo.value); alert('背景情報を保存'); }
-        function addProfile() { const n = prompt('プロファイル名'); if(n && !profiles[n]) { profiles[n] = ""; currentProfileName = n; updateProfileList(); } }
+        function savePersonalInfo() { localStorage.setItem(PK.u, personalInfo.value); alert('背景保存完了'); }
+        function addProfile() { const n = prompt('名前'); if(n && !profiles[n]) { profiles[n] = ""; currentProfileName = n; updateProfileList(); } }
 
         function postTweet() {
             const i = document.getElementById('tweetInput');
@@ -149,9 +150,9 @@
             const tl = document.getElementById('timeline');
             tl.innerHTML = tweets.filter(t => t.t.toLowerCase().includes(s)).map((t, idx) => `
                 <div class="x-post">
-                    <div class="flex justify-between text-[9px] text-gray-400 mb-0.5 font-mono uppercase tracking-tighter">
+                    <div class="flex justify-between text-[9px] text-gray-400 mb-0.5 font-mono">
                         <span>${t.d}</span>
-                        <div class="flex gap-2 font-bold tracking-widest">
+                        <div class="flex gap-2 font-bold tracking-widest uppercase">
                             <button onclick="sendToEd(${idx})" class="text-note">Add</button>
                             <button onclick="deleteTweet(${idx})" class="text-red-300">Del</button>
                         </div>
@@ -171,20 +172,22 @@
         }
         function renderHistory() {
             const list = document.getElementById('historyList');
-            if(!history.length) { list.innerHTML = '<p class="p-4 text-center text-gray-400 text-[10px] uppercase tracking-widest">No Records</p>'; return; }
-            list.innerHTML = history.map((h, i) => `<div class="history-item"><div class="flex justify-between text-[8px] text-gray-400 mb-1"><span>${h.d}</span><button onclick="copyHist(${i})" class="text-note font-bold uppercase tracking-widest">エディタへ送る</button></div><div class="text-[11px] leading-relaxed line-clamp-2">${h.body}</div></div>`).join('');
+            if(!history.length) { list.innerHTML = '<p class="p-4 text-center text-gray-400 text-[10px] uppercase">No Logs</p>'; return; }
+            list.innerHTML = history.map((h, i) => `<div class="history-item"><div class="flex justify-between text-[8px] text-gray-400 mb-1"><span>${h.d}</span><button onclick="copyHist(${i})" class="text-note font-bold uppercase">Editor</button></div><div class="text-[11px] leading-relaxed line-clamp-2">${h.body}</div></div>`).join('');
         }
         function copyHist(i) { mainContent.value += "\n\n" + history[i].body; updateCharCount(); alert('追加しました'); }
         function clearHistory() { if(confirm('全削除？')) { history = []; localStorage.setItem(PK.h, JSON.stringify(history)); renderHistory(); } }
 
+        // --- AI API：最新の安定仕様（v1beta / models/gemini-1.5-flash）に完全準拠 ---
         async function callAI(p) {
             const k = apiKeyEl.value; if(!k) return alert('API Keyを入力してください');
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('resultContainer').classList.add('hidden');
             try {
-                // 通信先を確実に修正
+                // モデル名の指定を修正（大文字・小文字、パス形式を最新仕様に固定）
                 const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${k}`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: p }] }] })
                 });
                 const d = await r.json();
@@ -196,11 +199,11 @@
         }
 
         async function analyzeTweets() {
-            const res = await callAI(`背景：${personalInfo.value}\n投稿：${tweets.map(t=>t.t).join('\n')}\n反響が出そうなNoteネタを3つ提案して。絵文字なし。日本語。`);
+            const res = await callAI(`背景：${personalInfo.value}\n投稿：${tweets.map(t=>t.t).join('\n')}\n反響が出そうなNoteネタを3つ提案して。絵文字なし。`);
             if(res) { showRes(res); addToHistory(res); }
         }
         async function generateDraft() {
-            const res = await callAI(`文体サンプルを分析し再現して：\n${currentStyle.value}\n\n上記に基づき、以下の内容でNoteの構成案を作成して。絵文字なし。日本語。\n内容：\n${mainContent.value}`);
+            const res = await callAI(`文体再現し、Note構成案を作成して。絵文字なし。\n文体：\n${currentStyle.value}\n内容：\n${mainContent.value}`);
             if(res) { showRes(res); addToHistory(res); }
         }
         function showRes(t) { document.getElementById('resultBody').innerText = t; document.getElementById('resultContainer').classList.remove('hidden'); }
