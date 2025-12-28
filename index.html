@@ -3,110 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Note Assistant v18</title>
+    <title>Note Assistant v20</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { theme: { extend: { colors: { note: '#2cb696', noteHover: '#24957a', xBlue: '#1d9bf0' } } } }
     </script>
     <style>
-        body { font-family: sans-serif; background: #f8f9fa; font-size: 13px; color: #333; line-height: 1.4; }
-        .card { background: white; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 8px; }
-        textarea, input, select { font-size: 12px !important; border: 1px solid #eee; }
-        .x-post, .history-item { border-bottom: 1px solid #eee; padding: 10px; font-size: 12px; }
+        body { font-family: sans-serif; background: #f8f9fa; font-size: 12px; color: #333; line-height: 1.4; }
+        .card { background: white; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 6px; }
+        textarea, input, select { font-size: 11px !important; border: 1px solid #eee; }
+        .x-post, .history-item { border-bottom: 1px solid #eee; padding: 8px; font-size: 11px; }
         .x-post:hover, .history-item:hover { background: #fcfcfc; }
         .recording { animation: pulse 1s infinite; background: #ff5a5f !important; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
     </style>
 </head>
-<body class="p-2">
-    <header class="flex justify-between items-center mb-3 px-1">
-        <h1 class="font-bold text-xs text-gray-400">Note Assistant v18</h1>
+<body class="p-1">
+    <header class="flex justify-between items-center mb-2 px-1">
+        <h1 class="font-bold text-[10px] text-gray-400 uppercase">Note Assistant v20</h1>
         <input type="password" id="apiKey" placeholder="Gemini API Key" class="p-1 border rounded w-32 bg-white text-[10px]">
     </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 max-w-6xl mx-auto">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-2 max-w-6xl mx-auto">
         
         <aside class="lg:col-span-4 space-y-2">
             
             <div class="card p-2 border-t-2 border-orange-400 shadow-sm">
-                <h2 class="text-[11px] font-bold text-orange-600 mb-2 uppercase tracking-tighter">あなたの情報・背景（AIが提案に使用）</h2>
-                <textarea id="personalInfo" rows="4" placeholder="職業、得意なこと、経験、価値観など...（例：10年目のエンジニアで、副業でカフェ巡りをしている、等）" class="w-full p-2 bg-orange-50/20 border rounded text-[10px] outline-none"></textarea>
-                <button onclick="savePersonalInfo()" class="w-full mt-1 bg-orange-400 text-white py-1 rounded text-[10px] font-bold">情報を保存</button>
+                <h2 class="text-[10px] font-bold text-orange-600 mb-1 uppercase">あなたの背景・経歴</h2>
+                <textarea id="personalInfo" rows="3" placeholder="AIが提案に使用します（職業、経験、価値観など）" class="w-full p-1 bg-orange-50/20 border rounded text-[10px] outline-none"></textarea>
+                <button onclick="savePersonalInfo()" class="w-full mt-1 bg-orange-400 text-white py-1 rounded text-[10px] font-bold">保存</button>
             </div>
 
             <details class="card" open>
-                <summary class="p-2 font-bold cursor-pointer bg-gray-50 text-[11px] border-b">文体プロファイル</summary>
-                <div class="p-2 space-y-2">
-                    <div class="flex gap-1">
-                        <select id="profileSelect" class="flex-1 p-1 border rounded text-[11px] font-bold outline-none"></select>
+                <summary class="p-1.5 font-bold cursor-pointer bg-gray-50 text-[10px] border-b uppercase">文体学習</summary>
+                <div class="p-2 space-y-1.5">
+                    <div class="flex gap-1 items-center">
+                        <select id="profileSelect" class="flex-1 p-1 border rounded text-[10px] font-bold"></select>
                         <button onclick="addProfile()" class="text-note font-bold text-[10px]">新規</button>
                     </div>
-                    <textarea id="currentStyle" rows="3" placeholder="学習用サンプル文章" class="w-full p-1 border rounded bg-gray-50 text-[10px]"></textarea>
-                    <button onclick="saveCurrentProfile()" class="w-full bg-gray-800 text-white py-1.5 rounded text-[11px] font-bold">保存</button>
+                    <textarea id="currentStyle" rows="3" placeholder="文体サンプルをここに貼り付け" class="w-full p-1 border rounded bg-gray-50 text-[10px] outline-none"></textarea>
+                    <button onclick="saveCurrentProfile()" class="w-full bg-gray-800 text-white py-1 rounded text-[10px] font-bold">保存</button>
                 </div>
             </details>
 
-            <div class="card p-2 border-t-2 border-blue-400">
-                <h2 class="text-[11px] font-bold text-blue-600 mb-2 uppercase tracking-tighter">外部資料・ニュース</h2>
-                <textarea id="inspirationData" rows="3" placeholder="気になるネタを貼る" class="w-full p-1 border rounded bg-blue-50/30 text-[10px] outline-none"></textarea>
-                <button onclick="analyzeInspiration()" class="w-full bg-blue-600 text-white py-1.5 rounded text-[11px] font-bold mt-1">企画案を生成</button>
-            </div>
-
             <div class="card overflow-hidden">
-                <div class="p-2 border-b bg-white flex flex-col gap-2">
+                <div class="p-2 border-b bg-white">
                     <textarea id="tweetInput" rows="2" placeholder="いまどうしてる？" class="w-full outline-none text-[12px] resize-none"></textarea>
-                    <div class="flex justify-end"><button onclick="postTweet()" class="bg-xBlue text-white px-4 py-1 rounded-full text-[11px] font-bold">投稿</button></div>
+                    <div class="flex justify-end mt-1"><button onclick="postTweet()" class="bg-xBlue text-white px-4 py-1 rounded-full text-[11px] font-bold">投稿</button></div>
                 </div>
+                <div class="p-1.5 bg-gray-50 border-b flex gap-1">
+                    <input type="text" id="tweetSearch" placeholder="投稿を検索..." class="flex-1 p-1 border rounded text-[10px] outline-none" oninput="renderTimeline()">
+                </div>
+                <button onclick="analyzeTweets()" class="w-full py-1 text-[9px] font-bold bg-gray-50 text-gray-400 border-b uppercase">タイムラインから分析</button>
                 <div id="timeline" class="max-h-[300px] overflow-y-auto bg-white"></div>
             </div>
         </aside>
 
         <main class="lg:col-span-8 space-y-2">
-            <div class="card p-3 border-t-2 border-note shadow-sm">
-                <div class="flex justify-between mb-2">
-                    <button id="recordBtn" class="bg-note text-white px-3 py-1 rounded text-[11px] font-bold">音声入力開始</button>
-                    <select id="templateType" class="p-1 border rounded text-[10px]"><option>エッセイ型</option><option>気づき・学び型</option><option>ハウツー型</option></select>
-                </div>
-                <textarea id="mainContent" rows="14" placeholder="内容を入力してください..." class="w-full text-[14px] leading-relaxed outline-none min-h-[350px] p-1 border-none"></textarea>
-                <div class="text-[10px] text-gray-400 border-t pt-2 flex justify-between items-center">
-                    <span>文字数: <span id="charCount">0</span></span>
-                    <button onclick="generateDraft()" id="btn-gen" class="bg-gray-800 text-white px-6 py-2 rounded font-bold hover:bg-black transition-all">構成案を作成</button>
-                </div>
-            </div>
-
-            <div id="loading" class="hidden text-center py-4 text-note font-bold text-sm animate-pulse italic">AI Thinking...</div>
             
-            <div id="resultContainer" class="hidden mt-2 card p-4 border-2 border-note/20 bg-white shadow-xl">
-                <div class="flex justify-between border-b pb-2 mb-3 items-center">
-                    <span class="font-bold text-xs text-gray-500 uppercase tracking-widest tracking-tighter">AI提案結果</span>
-                    <button onclick="copyResult()" class="text-note font-bold text-[11px] border border-note px-3 py-1 rounded font-bold">コピー</button>
+            <div class="card p-2 border-t-2 border-note shadow-sm relative">
+                <div class="flex justify-between mb-1.5 items-center">
+                    <button id="recordBtn" class="bg-note text-white px-3 py-0.5 rounded text-[10px] font-bold">音声入力開始</button>
+                    <select id="templateType" class="p-0.5 border rounded text-[10px] bg-white"><option>エッセイ型</option><option>学び型</option></select>
                 </div>
-                <div id="resultBody" class="text-[14px] leading-relaxed whitespace-pre-wrap text-gray-800"></div>
+                <textarea id="mainContent" rows="12" placeholder="本文を入力、または左の投稿を「追加」してください。" class="w-full text-[13px] leading-relaxed outline-none min-h-[280px] p-1 border-none"></textarea>
+                <div class="text-[9px] text-gray-400 border-t pt-1 mt-1 flex justify-between items-center font-mono">
+                    <span>CHARS: <span id="charCount">0</span></span>
+                    <button onclick="generateDraft()" id="btn-gen" class="bg-gray-800 text-white px-6 py-1.5 rounded text-[10px] font-bold hover:bg-black transition-all uppercase">Note構成案を作成</button>
+                </div>
             </div>
 
-            <details class="card" id="historySection">
-                <summary class="p-3 font-bold cursor-pointer bg-gray-100 text-[11px] border-b uppercase text-gray-500">企画・提案履歴（ストック）</summary>
-                <div id="historyList" class="max-h-[400px] overflow-y-auto">
-                    </div>
-                <button onclick="clearHistory()" class="w-full p-2 text-[10px] text-red-400 font-bold hover:bg-red-50 transition">履歴を全削除</button>
+            <div class="card p-2 border-t-2 border-blue-400">
+                <div class="flex gap-1 mb-1.5">
+                    <input type="text" id="fetchUrl" placeholder="ニュースURL等" class="flex-1 p-1 border rounded text-[10px]">
+                    <button onclick="fetchExternalContent()" class="bg-blue-400 text-white px-3 rounded text-[10px] font-bold">取得</button>
+                </div>
+                <textarea id="inspirationData" rows="2" placeholder="気になるネタを直接入力してもOK" class="w-full p-1 border rounded bg-blue-50/20 text-[10px] outline-none mb-1"></textarea>
+                <button onclick="analyzeInspiration()" class="w-full bg-blue-600 text-white py-1 rounded text-[10px] font-bold">このネタから企画を作る</button>
+            </div>
+
+            <div id="loading" class="hidden text-center py-2 text-note font-bold text-[10px] animate-pulse">Analyzing...</div>
+            <div id="resultContainer" class="hidden card p-3 border-2 border-note/20 bg-white shadow-lg">
+                <div id="resultBody" class="text-[13px] leading-relaxed whitespace-pre-wrap text-gray-800"></div>
+            </div>
+
+            <details class="card" open>
+                <summary class="p-2 font-bold cursor-pointer bg-gray-100 text-[10px] border-b uppercase text-gray-500 tracking-widest">提案履歴</summary>
+                <div id="historyList" class="max-h-[300px] overflow-y-auto"></div>
+                <button onclick="clearHistory()" class="w-full p-1.5 text-[9px] text-red-300 font-bold hover:bg-red-50">履歴をリセット</button>
             </details>
         </main>
     </div>
 
     <script>
-        // 永続化キー（固定）
-        const KEYS = { 
-            profiles: 'note_app_p_fixed', current: 'note_app_cp_fixed', 
-            tweets: 'note_app_t_fixed', api: 'note_app_k_fixed', 
-            inspiration: 'note_app_ins_fixed', personal: 'note_app_user_fixed',
-            history: 'note_app_hist_fixed'
-        };
-
-        let profiles = JSON.parse(localStorage.getItem(KEYS.profiles)) || { "デフォルト": "" };
-        let currentProfileName = localStorage.getItem(KEYS.current) || "デフォルト";
-        let tweets = JSON.parse(localStorage.getItem(KEYS.tweets)) || [];
-        let history = JSON.parse(localStorage.getItem(KEYS.history)) || [];
+        // 保存キー固定
+        const KEYS = { p: 'note_app_p_fixed', cp: 'note_app_cp_fixed', t: 'note_app_t_fixed', k: 'note_app_k_fixed', i: 'note_app_ins_fixed', u: 'note_app_user_fixed', h: 'note_app_hist_fixed' };
         
+        let profiles = JSON.parse(localStorage.getItem(KEYS.p)) || { "デフォルト": "" };
+        let currentProfileName = localStorage.getItem(KEYS.cp) || "デフォルト";
+        let tweets = JSON.parse(localStorage.getItem(KEYS.t)) || [];
+        let history = JSON.parse(localStorage.getItem(KEYS.h)) || [];
+
         const apiKeyEl = document.getElementById('apiKey');
         const profileSelect = document.getElementById('profileSelect');
         const currentStyle = document.getElementById('currentStyle');
@@ -114,11 +111,11 @@
         const personalInfo = document.getElementById('personalInfo');
         const inspirationData = document.getElementById('inspirationData');
 
-        apiKeyEl.value = localStorage.getItem(KEYS.api) || '';
-        apiKeyEl.oninput = (e) => localStorage.setItem(KEYS.api, e.target.value);
-        personalInfo.value = localStorage.getItem(KEYS.personal) || '';
-        inspirationData.value = localStorage.getItem(KEYS.inspiration) || '';
-        inspirationData.oninput = (e) => localStorage.setItem(KEYS.inspiration, e.target.value);
+        apiKeyEl.value = localStorage.getItem(KEYS.k) || '';
+        apiKeyEl.oninput = (e) => localStorage.setItem(KEYS.k, e.target.value);
+        personalInfo.value = localStorage.getItem(KEYS.u) || '';
+        inspirationData.value = localStorage.getItem(KEYS.i) || '';
+        inspirationData.oninput = (e) => localStorage.setItem(KEYS.i, e.target.value);
 
         function updateProfileList() {
             profileSelect.innerHTML = '';
@@ -129,105 +126,118 @@
             });
             currentStyle.value = profiles[currentProfileName];
         }
-        profileSelect.onchange = (e) => { currentProfileName = e.target.value; localStorage.setItem(KEYS.current, currentProfileName); currentStyle.value = profiles[currentProfileName]; };
-        function saveCurrentProfile() { profiles[currentProfileName] = currentStyle.value; localStorage.setItem(KEYS.profiles, JSON.stringify(profiles)); alert('保存完了'); }
-        function savePersonalInfo() { localStorage.setItem(KEYS.personal, personalInfo.value); alert('背景情報を保存しました。AIの提案に反映されます。'); }
-        function addProfile() { const n = prompt('プロファイル名'); if(n && !profiles[n]) { profiles[n] = ""; currentProfileName = n; updateProfileList(); } }
-        
-        // --- 履歴管理 ---
-        function addToHistory(title, body) {
-            const item = { title: title, body: body, date: new Date().toLocaleString('ja-JP') };
-            history.unshift(item);
-            if(history.length > 30) history.pop(); // 最大30件
-            localStorage.setItem(KEYS.history, JSON.stringify(history));
+        profileSelect.onchange = (e) => { currentProfileName = e.target.value; localStorage.setItem(KEYS.cp, currentProfileName); currentStyle.value = profiles[currentProfileName]; };
+        function saveCurrentProfile() { profiles[currentProfileName] = currentStyle.value; localStorage.setItem(KEYS.p, JSON.stringify(profiles)); alert('文体を保存しました'); }
+        function savePersonalInfo() { localStorage.setItem(KEYS.u, personalInfo.value); alert('背景を保存しました'); }
+        function addProfile() { const n = prompt('名前'); if(n && !profiles[n]) { profiles[n] = ""; currentProfileName = n; updateProfileList(); } }
+
+        // --- タイムライン（追加ボタン復活） ---
+        function postTweet() {
+            const v = tweetInput.value.trim();
+            if(!v) return;
+            tweets.unshift({ t: v, d: new Date().toLocaleString('ja-JP') });
+            localStorage.setItem(KEYS.t, JSON.stringify(tweets));
+            tweetInput.value = '';
+            renderTimeline();
+        }
+        function renderTimeline() {
+            const search = document.getElementById('tweetSearch').value.toLowerCase();
+            const tl = document.getElementById('timeline');
+            tl.innerHTML = tweets.filter(t => t.t.toLowerCase().includes(search)).map((t, i) => `
+                <div class="x-post">
+                    <div class="flex justify-between text-[8px] text-gray-400 mb-0.5">
+                        <span>${t.d}</span>
+                        <div class="flex gap-2 font-bold uppercase">
+                            <button onclick="sendToEd(${i})" class="text-note">追加</button>
+                            <button onclick="editTweet(${i})" class="text-blue-400">編集</button>
+                            <button onclick="deleteTweet(${i})">消去</button>
+                        </div>
+                    </div>
+                    <p class="leading-tight text-[11px] whitespace-pre-wrap">${t.t}</p>
+                </div>
+            `).join('');
+        }
+        function sendToEd(i) { mainContent.value += (mainContent.value ? '\n' : '') + tweets[i].t; updateCharCount(); }
+        function deleteTweet(i) { if(confirm('消去？')) { tweets.splice(i,1); localStorage.setItem(KEYS.t, JSON.stringify(tweets)); renderTimeline(); } }
+        function editTweet(i) { const n = prompt('編集', tweets[i].t); if(n) { tweets[i].t = n; localStorage.setItem(KEYS.t, JSON.stringify(tweets)); renderTimeline(); } }
+
+        // --- 提案履歴 ---
+        function addToHistory(body) {
+            history.unshift({ body, d: new Date().toLocaleString() });
+            if(history.length > 20) history.pop();
+            localStorage.setItem(KEYS.h, JSON.stringify(history));
             renderHistory();
         }
         function renderHistory() {
             const list = document.getElementById('historyList');
-            if(!history.length) { list.innerHTML = '<p class="p-6 text-center text-gray-400">履歴はありません</p>'; return; }
-            list.innerHTML = history.map((h, i) => `
-                <div class="history-item">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">${h.date}</span>
-                        <div class="flex gap-2">
-                            <button onclick="copyHistoryItem(${i})" class="text-note font-bold text-[10px]">コピペ</button>
-                            <button onclick="deleteHistoryItem(${i})" class="text-red-300">削除</button>
-                        </div>
-                    </div>
-                    <div class="text-[11px] font-bold text-gray-700 mb-1 leading-tight">${h.title}</div>
-                    <div class="text-[10px] text-gray-500 line-clamp-2">${h.body.substring(0, 100)}...</div>
-                </div>
-            `).join('');
+            if(!history.length) { list.innerHTML = '<p class="p-4 text-center text-gray-300 text-[10px]">履歴なし</p>'; return; }
+            list.innerHTML = history.map((h, i) => `<div class="history-item"><div class="flex justify-between text-[8px] text-gray-400 mb-1"><span>${h.d}</span><button onclick="copyHist(${i})" class="text-note font-bold uppercase tracking-widest">エディタへ送る</button></div><div class="text-[11px] leading-relaxed line-clamp-2">${h.body}</div></div>`).join('');
         }
-        function copyHistoryItem(i) { mainContent.value += (mainContent.value ? '\n\n' : '') + history[i].body; updateCharCount(); alert('エディタにコピーしました'); }
-        function deleteHistoryItem(i) { history.splice(i,1); localStorage.setItem(KEYS.history, JSON.stringify(history)); renderHistory(); }
-        function clearHistory() { if(confirm('全削除？')) { history = []; localStorage.setItem(KEYS.history, JSON.stringify(history)); renderHistory(); } }
+        function copyHist(i) { mainContent.value += (mainContent.value ? '\n\n' : '') + history[i].body; updateCharCount(); alert('エディタに追加しました'); }
+        function clearHistory() { if(confirm('履歴全削除？')) { history = []; localStorage.setItem(KEYS.h, JSON.stringify(history)); renderHistory(); } }
 
-        // --- AI 通信 ---
+        // --- URL取得 ---
+        async function fetchExternalContent() {
+            const url = document.getElementById('fetchUrl').value;
+            if(!url) return alert('URLを入力');
+            try {
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                const r = await fetch(proxyUrl);
+                const d = await r.json();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(d.contents, 'text/html');
+                const cleanText = (doc.querySelector('.p-article__body') || doc.body).innerText.replace(/\s+/g, ' ').trim().substring(0, 1200);
+                inspirationData.value = (inspirationData.value + "\n\n" + cleanText).trim();
+                localStorage.setItem(KEYS.i, inspirationData.value);
+                alert('読み込み成功');
+            } catch (e) { alert('読み込み失敗。手動コピペしてください。'); }
+        }
+
+        // --- AI 通信（エラー対策強化） ---
         async function callAI(prompt) {
-            const key = apiKeyEl.value; if(!key) return alert('Keyを入力してください');
+            const key = apiKeyEl.value;
+            if(!key) return alert('Keyを入力してください');
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('resultContainer').classList.add('hidden');
             try {
                 const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
                 const d = await r.json();
+                if(d.error) throw new Error(d.error.message);
                 return d.candidates[0].content.parts[0].text;
-            } catch (e) { alert('APIエラー'); return null; }
-            finally { document.getElementById('loading').classList.add('hidden'); }
+            } catch (e) {
+                alert('APIエラー: ' + e.message + '\n※Google AI Studioで新しいAPIキーを「新しいプロジェクト」として作成し直すと高確率で直ります。');
+                return null;
+            } finally { document.getElementById('loading').classList.add('hidden'); }
         }
 
         async function analyzeInspiration() {
-            const data = inspirationData.value;
-            const user = personalInfo.value;
-            if(!data) return alert('資料を入力してください');
-            const prompt = `あなたは私の専属コンテンツプランナーです。以下の資料を読み、私の背景情報を踏まえた上で、Noteで書くべき独自の企画案を3つ提案してください。
-【私の背景情報】
-${user || "（未入力）"}
-【参考資料】
-${data}
-企画のタイトル、なぜ私（この背景を持つ人）が書くべきか、具体的な切り口を教えてください。絵文字なし、簡潔に。`;
-            const res = await callAI(prompt);
-            if(res) { 
-                showResult(res);
-                addToHistory("外部資料からの企画提案", res);
-            }
+            const res = await callAI(`背景：${personalInfo.value}\n資料：${inspirationData.value}\nこれらを元に、Noteで書くべき独自の切り口の企画を3つ提案して。絵文字なし、簡潔に。`);
+            if(res) { showRes(res); addToHistory(res); }
         }
-
         async function analyzeTweets() {
-            const txt = tweets.map(t=>t.text).join('\n');
-            const user = personalInfo.value;
-            const res = await callAI(`私の背景情報を踏まえ、以下の投稿ログから反響が出そうなNoteのネタを3つ提案してください。絵文字なし。\n【背景】\n${user}\n【投稿】\n${txt}`);
-            if(res) {
-                showResult(res);
-                addToHistory("タイムライン分析結果", res);
-            }
+            const res = await callAI(`背景：${personalInfo.value}\n投稿：${tweets.map(t=>t.t).join('\n')}\n反響が出そうなNoteネタを3つ提案して。絵文字なし。`);
+            if(res) { showRes(res); addToHistory(res); }
         }
-
         async function generateDraft() {
-            const res = await callAI(`文体を再現しNoteの構成案を作ってください。絵文字なし。\n文体：\n${currentStyle.value}\n内容：\n${mainContent.value}`);
-            if(res) { showResult(res); document.getElementById('resultContainer').scrollIntoView({ behavior: 'smooth' }); }
+            const res = await callAI(`文体：${currentStyle.value}\n内容：${mainContent.value}\nNote構成案を作って。絵文字なし。`);
+            if(res) { showRes(res); addToHistory(res); }
         }
-
-        // --- 共通機能 ---
-        function showResult(text) { document.getElementById('resultBody').innerText = text; document.getElementById('resultContainer').classList.remove('hidden'); }
-        function postTweet() { const v = tweetInput.value.trim(); if(!v) return; tweets.unshift({ text: v, date: new Date().toLocaleString('ja-JP') }); localStorage.setItem(KEYS.tweets, JSON.stringify(tweets)); tweetInput.value = ''; renderTimeline(); }
-        function renderTimeline() {
-            const tl = document.getElementById('timeline');
-            if(!tweets.length) { tl.innerHTML = '<p class="p-6 text-center text-gray-300">なし</p>'; return; }
-            tl.innerHTML = tweets.map((t, i) => `<div class="x-post"><div class="flex justify-between text-[9px] text-gray-400 mb-1"><span>${t.date}</span><div class="flex gap-2 font-bold"><button onclick="sendToEditor(${i})" class="text-note">追加</button><button onclick="deleteTweet(${i})" class="text-red-300">消去</button></div></div><p class="leading-snug text-[12px] whitespace-pre-wrap">${t.text}</p></div>`).join('');
-        }
-        function sendToEditor(i) { mainContent.value += (mainContent.value ? '\n' : '') + tweets[i].text; updateCharCount(); }
-        function deleteTweet(i) { if(confirm('削除？')) { tweets.splice(i,1); localStorage.setItem(KEYS.tweets, JSON.stringify(tweets)); renderTimeline(); } }
+        function showRes(t) { document.getElementById('resultBody').innerText = t; document.getElementById('resultContainer').classList.remove('hidden'); }
         function updateCharCount() { document.getElementById('charCount').innerText = mainContent.value.length; }
-        function copyResult() { navigator.clipboard.writeText(document.getElementById('resultBody').innerText); alert('コピー完了'); }
         mainContent.oninput = updateCharCount;
         updateProfileList(); renderTimeline(); renderHistory();
+
         // 音声認識
         let rec; const rb = document.getElementById('recordBtn');
-        if ('webkitSpeechRecognition' in window) { rec = new webkitSpeechRecognition(); rec.lang = 'ja-JP'; rec.continuous = true; rec.interimResults = true; rec.onresult = (e) => { let t = ''; for (let i = e.resultIndex; i < e.results.length; ++i) t += e.results[i][0].transcript; mainContent.value = t; updateCharCount(); }; rb.onclick = () => { if(rb.classList.contains('recording')) { rec.stop(); rb.classList.remove('recording'); } else { rec.start(); rb.classList.add('recording'); } }; }
+        if ('webkitSpeechRecognition' in window) {
+            rec = new webkitSpeechRecognition(); rec.lang = 'ja-JP'; rec.continuous = true;
+            rec.onresult = (e) => { let t = ''; for (let i = e.resultIndex; i < e.results.length; ++i) t += e.results[i][0].transcript; mainContent.value = t; updateCharCount(); };
+            rb.onclick = () => { if(rb.classList.contains('recording')) { rec.stop(); rb.classList.remove('recording'); rb.innerText="音声入力開始"; } else { rec.start(); rb.classList.add('recording'); rb.innerText="停止"; } };
+        }
     </script>
 </body>
 </html>
