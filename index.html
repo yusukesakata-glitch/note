@@ -3,112 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Note執筆アシスタント Pro v3</title>
+    <title>Note Assistant Pro v4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = { theme: { extend: { colors: { note: '#2cb696' } } } }
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        note: '#2cb696',
+                        noteHover: '#24957a',
+                        noteBg: '#ffffff',
+                    }
+                }
+            }
+        }
     </script>
     <style>
-        body { font-family: -apple-system, sans-serif; }
-        .recording { animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        /* Noteに近いフォント設定 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Meiryo", sans-serif;
+            background-color: #f8f9fa;
+        }
+        .note-card {
+            background: white;
+            border: 1px solid #e9e9e9;
+            border-radius: 8px;
+        }
+        .note-input {
+            border: none;
+            outline: none;
+            resize: none;
+            background: transparent;
+        }
+        .recording { animation: pulse 1.5s infinite; background-color: #ff5a5f !important; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen pb-20 text-slate-800">
-    <div class="max-w-4xl mx-auto p-4 md:p-8">
-        <header class="mb-8 flex justify-between items-end">
-            <div>
-                <h1 class="text-3xl font-bold text-slate-900 tracking-tight">📝 Note Assistant <span class="text-note text-sm">Pro v3</span></h1>
-                <p class="text-slate-500 mt-1 text-sm">文体マネージャー ＆ アイディア・ハンター搭載</p>
-            </div>
-            <input type="password" id="apiKey" placeholder="API Key" class="p-2 border rounded text-xs w-32 focus:w-64 transition-all">
-        </header>
+<body class="min-h-screen pb-20 text-[#333]">
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <header class="sticky top-0 z-50 bg-white border-b border-[#e9e9e9] px-4 py-3 mb-8">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold tracking-tight text-[#333]">Note Assistant</h1>
+            <div class="flex gap-4 items-center">
+                <input type="password" id="apiKey" placeholder="Gemini API Key" class="text-xs p-2 border border-[#e9e9e9] rounded focus:border-note outline-none transition-all w-32 md:w-48">
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-4xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <aside class="lg:col-span-4 space-y-6">
             
-            <div class="lg:col-span-1 space-y-6">
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                    <h2 class="font-bold text-sm text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                        👥 文体プロファイル
-                    </h2>
-                    <div class="space-y-4">
-                        <select id="profileSelect" class="w-full p-2 border rounded-lg bg-slate-50 font-bold text-sm">
-                            </select>
-                        <div class="flex gap-2">
-                            <button onclick="addProfile()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs py-2 rounded-lg font-bold transition">新規追加</button>
-                            <button onclick="deleteProfile()" class="bg-red-50 hover:bg-red-100 text-red-600 text-xs px-3 py-2 rounded-lg font-bold transition">削除</button>
-                        </div>
-                        <textarea id="currentStyle" rows="8" placeholder="お手本の文章をここに保存..." 
-                            class="w-full p-3 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-note focus:outline-none"></textarea>
-                        <button onclick="saveCurrentProfile()" class="w-full bg-slate-800 text-white text-xs py-2 rounded-lg font-bold hover:bg-black transition">プロファイルを保存</button>
-                    </div>
+            <div class="note-card p-5">
+                <h2 class="text-xs font-bold text-[#999] uppercase tracking-widest mb-4">文体プロファイル</h2>
+                <select id="profileSelect" class="w-full p-2 mb-3 bg-[#f8f9fa] border-none rounded font-bold text-sm outline-none">
+                    </select>
+                <div class="flex gap-2 mb-3">
+                    <button onclick="addProfile()" class="flex-1 text-[11px] font-bold text-note border border-note py-1 rounded-full hover:bg-note hover:text-white transition">追加</button>
+                    <button onclick="deleteProfile()" class="text-[11px] font-bold text-red-400 py-1 px-2">削除</button>
                 </div>
-
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                    <h2 class="font-bold text-sm text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                        🕵️ アイディア・ハンター
-                    </h2>
-                    <p class="text-[10px] text-slate-500 mb-2">日常のメモ、最近の悩み、生活の変化などを入力してください。</p>
-                    <textarea id="lifeLog" rows="6" placeholder="例：最近カフェ代が高くて困る。夜型から朝型に変えたい。散歩中に見つけた看板が変だった..." 
-                        class="w-full p-3 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50/30"></textarea>
-                    <button onclick="huntIdeas()" id="btn-hunt" class="w-full mt-3 bg-blue-600 text-white text-xs py-3 rounded-lg font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-100 flex items-center justify-center gap-2">
-                        <span>🔎</span> 生活からネタを探す
-                    </button>
-                </div>
+                <textarea id="currentStyle" rows="6" placeholder="お手本の文章を貼り付け..." 
+                    class="w-full p-3 bg-[#f8f9fa] rounded-lg text-xs leading-relaxed note-input"></textarea>
+                <button onclick="saveCurrentProfile()" class="w-full mt-3 bg-[#333] text-white text-xs py-2 rounded-full font-bold hover:bg-black transition">保存する</button>
             </div>
 
-            <div class="lg:col-span-2 space-y-6">
-                
-                <div class="bg-white p-6 rounded-2xl shadow-md border-t-4 border-note">
-                    <div class="flex items-center gap-4 mb-6">
-                        <button id="recordBtn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-blue-100">
-                            <span id="recordText">🎙️ 音声入力</span>
-                        </button>
-                        <select id="templateType" class="flex-1 p-4 border border-slate-200 rounded-xl font-bold bg-white text-sm outline-none">
+            <div class="note-card p-5 border-t-4 border-blue-400">
+                <h2 class="text-xs font-bold text-[#999] uppercase tracking-widest mb-4">日常のメモ (ライフログ)</h2>
+                <textarea id="lifeLog" rows="5" placeholder="今日気づいたこと、感じたこと..." 
+                    class="w-full p-3 bg-[#f8f9fa] rounded-lg text-xs leading-relaxed note-input mb-3"></textarea>
+                <button onclick="huntIdeas()" id="btn-hunt" class="w-full bg-blue-500 text-white text-xs py-3 rounded-full font-bold hover:bg-blue-600 transition flex items-center justify-center gap-2 shadow-sm">
+                    <span>🔍</span> ネタを探す
+                </button>
+            </div>
+        </aside>
+
+        <main class="lg:col-span-8 space-y-6">
+            
+            <div class="note-card p-6 md:p-10 shadow-sm">
+                <div class="flex flex-col md:flex-row gap-4 mb-8 border-b pb-6">
+                    <button id="recordBtn" class="flex-1 bg-note hover:bg-noteHover text-white font-bold py-4 rounded-full transition flex items-center justify-center gap-3 shadow-md shadow-green-50">
+                        <span id="recordText">🎙️ 音声で入力する</span>
+                    </button>
+                    <div class="flex-1 flex items-center gap-2">
+                        <span class="text-xs font-bold text-[#999]">型:</span>
+                        <select id="templateType" class="flex-1 p-2 bg-[#f8f9fa] rounded-lg font-bold text-sm outline-none border-none">
                             <option value="エッセイ型">エッセイ型</option>
                             <option value="気づき・学び型">気づき・学び型</option>
                             <option value="ハウツー紹介型">ハウツー紹介型</option>
                         </select>
                     </div>
-                    <textarea id="mainContent" rows="5" placeholder="話したいこと、またはAIが見つけたネタをここに入れてください..." 
-                        class="w-full p-4 border border-slate-200 rounded-xl mb-4 focus:ring-2 focus:ring-note focus:outline-none min-h-[150px]"></textarea>
-                    <button onclick="generateDraft()" id="btn-gen" class="w-full bg-note text-white font-bold py-4 rounded-xl hover:brightness-110 transition shadow-lg shadow-green-100 text-lg">
-                        AI編集会議を開始 🚀
-                    </button>
                 </div>
 
-                <div id="loading" class="hidden py-12 text-center animate-pulse">
-                    <div class="text-note font-bold text-xl mb-2">AIがあなたの分身として思考中...</div>
-                    <div class="text-slate-400 text-sm">文体を再現し、最高の構成を練り上げています</div>
-                </div>
-
-                <div id="resultContainer" class="hidden space-y-6">
-                    <div class="bg-white p-6 md:p-10 rounded-3xl shadow-2xl border border-slate-200 relative">
-                        <div class="flex justify-between items-center mb-6 pb-4 border-b">
-                            <h2 id="resultTitle" class="text-xl font-bold">✨ 解析結果</h2>
-                            <button onclick="copyResult()" class="text-xs bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-full font-bold">コピー</button>
-                        </div>
-                        <div id="resultBody" class="whitespace-pre-wrap leading-relaxed text-slate-700 prose prose-slate max-w-none"></div>
-                    </div>
-                </div>
-
+                <textarea id="mainContent" rows="8" placeholder="ここに書きたいことを入力、またはAIに提案されたネタを貼り付けてください..." 
+                    class="w-full text-lg leading-relaxed note-input mb-8 placeholder:text-[#ccc]" style="min-height: 200px;"></textarea>
+                
+                <button onclick="generateDraft()" id="btn-gen" class="w-full bg-[#333] text-white font-bold py-5 rounded-full hover:bg-black transition-all text-lg shadow-lg">
+                    構成案を作成する 🚀
+                </button>
             </div>
-        </div>
+
+            <div id="loading" class="hidden text-center py-10">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-note mb-4"></div>
+                <p class="text-note font-bold">思考を整理しています...</p>
+            </div>
+
+            <div id="resultContainer" class="hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div class="bg-white p-8 md:p-12 rounded-lg shadow-sm border border-[#e9e9e9]">
+                    <div class="flex justify-between items-center mb-10">
+                        <span class="text-xs font-bold bg-[#f2f2f2] px-3 py-1 rounded text-[#666]">AI解析レポート</span>
+                        <button onclick="copyResult()" class="text-note font-bold text-sm hover:underline">全文コピー</button>
+                    </div>
+                    <div id="resultBody" class="prose prose-note max-w-none text-[#333] leading-[1.8] text-[17px]">
+                        </div>
+                </div>
+            </div>
+
+        </main>
     </div>
 
     <script>
-        // --- データ管理 ---
-        let profiles = JSON.parse(localStorage.getItem('note_v3_profiles')) || { "自分": "" };
-        let currentProfileName = localStorage.getItem('note_v3_current_profile') || "自分";
+        // --- データ管理 (v3のロジックを継承) ---
+        let profiles = JSON.parse(localStorage.getItem('note_v4_profiles')) || { "自分": "" };
+        let currentProfileName = localStorage.getItem('note_v4_current_profile') || "自分";
 
         const apiKeyEl = document.getElementById('apiKey');
         const profileSelect = document.getElementById('profileSelect');
         const currentStyle = document.getElementById('currentStyle');
         const lifeLog = document.getElementById('lifeLog');
 
-        // 初期化
-        apiKeyEl.value = localStorage.getItem('note_v3_api_key') || '';
-        apiKeyEl.oninput = (e) => localStorage.setItem('note_v3_api_key', e.target.value);
+        apiKeyEl.value = localStorage.getItem('note_v4_api_key') || '';
+        apiKeyEl.oninput = (e) => localStorage.setItem('note_v4_api_key', e.target.value);
         updateProfileList();
 
         function updateProfileList() {
@@ -124,32 +148,30 @@
 
         profileSelect.onchange = (e) => {
             currentProfileName = e.target.value;
-            localStorage.setItem('note_v3_current_profile', currentProfileName);
+            localStorage.setItem('note_v4_current_profile', currentProfileName);
             currentStyle.value = profiles[currentProfileName];
         };
 
         function saveCurrentProfile() {
             profiles[currentProfileName] = currentStyle.value;
-            localStorage.setItem('note_v3_profiles', JSON.stringify(profiles));
+            localStorage.setItem('note_v4_profiles', JSON.stringify(profiles));
             alert('保存しました');
         }
 
         function addProfile() {
-            const name = prompt('新しいプロファイル名を入力してください（例：Aさん）');
+            const name = prompt('プロファイル名を入力（例：エッセイ用）');
             if(name && !profiles[name]) {
-                profiles[name] = "";
-                currentProfileName = name;
-                updateProfileList();
+                profiles[name] = ""; currentProfileName = name; updateProfileList();
             }
         }
 
         function deleteProfile() {
-            if(Object.keys(profiles).length <= 1) return alert('最後の1つは削除できません');
-            if(confirm(`${currentProfileName}を削除しますか？`)) {
+            if(Object.keys(profiles).length <= 1) return;
+            if(confirm('削除しますか？')) {
                 delete profiles[currentProfileName];
                 currentProfileName = Object.keys(profiles)[0];
                 updateProfileList();
-                localStorage.setItem('note_v3_profiles', JSON.stringify(profiles));
+                localStorage.setItem('note_v4_profiles', JSON.stringify(profiles));
             }
         }
 
@@ -166,21 +188,20 @@
             recordBtn.onclick = () => {
                 if(recordBtn.classList.contains('recording')) {
                     recognition.stop();
-                    recordBtn.classList.remove('recording', 'bg-red-500');
-                    recordBtn.innerText = "🎙️ 音声入力";
+                    recordBtn.classList.remove('recording');
+                    document.getElementById('recordText').innerText = "🎙️ 音声で入力する";
                 } else {
                     recognition.start();
-                    recordBtn.classList.add('recording', 'bg-red-500');
-                    recordBtn.innerText = "🛑 停止して確定";
+                    recordBtn.classList.add('recording');
+                    document.getElementById('recordText').innerText = "🛑 停止する";
                 }
             };
         }
 
-        // --- AI API 通信 ---
+        // --- API 通信 ---
         async function callAI(prompt) {
             const key = apiKeyEl.value;
-            if(!key) return alert('API Keyを入力してください');
-            
+            if(!key) return alert('API Keyが必要です');
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('resultContainer').classList.add('hidden');
 
@@ -193,71 +214,46 @@
                 const data = await res.json();
                 return data.candidates[0].content.parts[0].text;
             } catch (e) {
-                alert('エラーが発生しました');
-                return null;
+                alert('APIエラーが発生しました'); return null;
             } finally {
                 document.getElementById('loading').classList.add('hidden');
             }
         }
 
-        // --- 機能1: ネタ探し ---
         async function huntIdeas() {
             const log = lifeLog.value;
             if(!log) return alert('ライフログを入力してください');
-
-            const prompt = `あなたはプロのコンテンツプランナーです。以下のユーザーのライフログを読み、Noteで書くと面白い「記事のネタ」を5つ提案してください。
-単なるタイトルだけでなく、なぜそれが面白いのかという「切り口」と、どんな層に刺さるかも詳しく説明してください。
-
-【ライフログ】
-${log}
-
-【出力形式】
-1. [ネタのタイトル案]
-- 切り口: 〇〇という視点で書く
-- ターゲット: 〇〇に悩んでいる人
-...（5つ分）`;
-
+            const prompt = `あなたはプロのコンテンツプランナーです。以下の日常メモを元に、Noteで「スキ」が集まる記事のネタを5つ提案してください。単なるタイトル案だけでなく、なぜその切り口が面白いのか、どんな読者に刺さるかも解説してください。\n\n【日常メモ】\n${log}`;
             const result = await callAI(prompt);
-            if(result) {
-                document.getElementById('resultTitle').innerText = "🔎 ネタ探しの結果";
-                document.getElementById('resultBody').innerText = result;
-                document.getElementById('resultContainer').classList.remove('hidden');
-                document.getElementById('resultContainer').scrollIntoView({ behavior: 'smooth' });
-            }
+            if(result) showResult(result);
         }
 
-        // --- 機能2: 執筆構成案作成 ---
         async function generateDraft() {
             const content = document.getElementById('mainContent').value;
             const style = currentStyle.value;
             const type = document.getElementById('templateType').value;
-
             if(!content) return alert('内容を入力してください');
 
-            const prompt = `あなたはプロのNoteライターです。以下の【文体サンプル】を分析し、今回のネタを記事にしてください。
-【文体サンプル】
-${style || "一般的で読みやすいNoteの文体"}
-
-【今回のネタ・メモ】
-${content}
-
-【型】: ${type}
-
-【出力事項】
+            const prompt = `あなたはプロのNoteライターです。以下の【文体サンプル】のリズム、語尾、改行スタイルを完璧に再現し、構成案を作成してください。
+【文体サンプル】\n${style}
+【ネタ】\n${content}
+【型】\n${type}
+【出力内容】
 1. タイトル案(3つ)
-2. 共感を呼ぶ導入文（サンプルの文体を完全に再現したもの）
-3. 章立て(H2)と各章のポイント
-4. ハッシュタグ10個
+2. 導入文案（サンプルの文体を反映）
+3. 章立てと各章のポイント
+4. おすすめハッシュタグ
 5. 画像生成用英語プロンプト
-6. 編集者からのコメント（モチベアップ！）`;
+6. 編集者からの応援コメント`;
 
             const result = await callAI(prompt);
-            if(result) {
-                document.getElementById('resultTitle').innerText = "✨ 構成案 ＆ 最適化分析";
-                document.getElementById('resultBody').innerText = result;
-                document.getElementById('resultContainer').classList.remove('hidden');
-                document.getElementById('resultContainer').scrollIntoView({ behavior: 'smooth' });
-            }
+            if(result) showResult(result);
+        }
+
+        function showResult(text) {
+            document.getElementById('resultBody').innerText = text;
+            document.getElementById('resultContainer').classList.remove('hidden');
+            document.getElementById('resultContainer').scrollIntoView({ behavior: 'smooth' });
         }
 
         function copyResult() {
