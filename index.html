@@ -2,164 +2,55 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Note Assistant v38</title>
+    <title>Final Connection v40</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = { theme: { extend: { colors: { note: '#2cb696', xBlue: '#1d9bf0' } } } }
-    </script>
-    <style>
-        body { font-family: sans-serif; background: #f4f7f6; color: #1a1a1a; }
-        .card { background: white; border-radius: 12px; margin-bottom: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .x-post { border-bottom: 1px solid #f0f2f5; padding: 12px; }
-        .recording { animation: pulse 1s infinite; background: #ff4b50 !important; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-    </style>
 </head>
-<body class="p-4 max-w-4xl mx-auto">
-
-    <header class="flex justify-between items-center mb-6">
-        <h1 class="font-black text-2xl text-note tracking-tighter">Note Assistant v38</h1>
-        <input type="password" id="apiKey" placeholder="AI Studioのキーを貼る" class="w-64 p-2 rounded-lg border-2 border-gray-200 focus:border-note text-xs outline-none">
-    </header>
-
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <aside class="lg:col-span-4 space-y-4">
-            <div class="card p-4 border-t-4 border-orange-400">
-                <h2 class="text-xs font-bold text-orange-500 mb-2 uppercase tracking-widest">Settings</h2>
-                <textarea id="personalInfo" rows="2" placeholder="背景情報" class="w-full p-2 bg-orange-50/30 rounded text-sm mb-2 border border-orange-100 outline-none"></textarea>
-                <textarea id="currentStyle" rows="2" placeholder="文体サンプル" class="w-full p-2 bg-orange-50/30 rounded text-sm border border-orange-100 outline-none"></textarea>
-                <button onclick="saveAll()" class="w-full mt-2 bg-orange-400 text-white py-2 rounded-lg font-bold text-xs">保存</button>
-            </div>
-
-            <div class="card min-h-[400px]">
-                <div class="p-3 border-b bg-gray-50/50">
-                    <textarea id="tweetInput" rows="2" placeholder="ネタをメモ..." class="w-full p-2 bg-transparent resize-none text-sm outline-none"></textarea>
-                    <button onclick="postTweet()" class="w-full mt-2 bg-xBlue text-white py-2 rounded-full font-bold text-sm">投稿</button>
-                </div>
-                <div id="timeline" class="max-h-[500px] overflow-y-auto"></div>
-            </div>
-        </aside>
-
-        <main class="lg:col-span-8 space-y-4">
-            <div class="card p-4 border-t-4 border-note">
-                <div class="flex justify-between mb-4">
-                    <button id="recordBtn" class="bg-note text-white px-4 py-2 rounded-full font-bold text-xs">音声入力</button>
-                </div>
-                <textarea id="mainContent" rows="15" placeholder="本文..." class="w-full text-lg leading-relaxed p-2 outline-none"></textarea>
-                <button onclick="generateDraft()" id="btn-gen" class="w-full bg-black text-white py-5 rounded-2xl font-black text-xl mt-4 shadow-xl active:scale-95 transition-all">
-                    構成案を作成
-                </button>
-            </div>
-
-            <div id="loading" class="hidden text-center py-8">
-                <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-note"></div>
-                <div class="mt-2 font-bold text-note">AIが思考しています...</div>
-            </div>
-            
-            <div id="resultContainer" class="hidden card p-6 border-2 border-note bg-white animate-fade-in">
-                <div id="resultBody" class="text-lg leading-loose whitespace-pre-wrap"></div>
-            </div>
-        </main>
+<body class="p-4 max-w-xl mx-auto bg-gray-50 flex items-center min-h-screen font-sans">
+    <div class="bg-white p-8 rounded-3xl shadow-2xl border-t-8 border-blue-500 w-full">
+        <h1 class="font-bold text-gray-400 mb-6 text-center text-xs uppercase tracking-widest">v40: Dual Connection Mode</h1>
+        <input type="password" id="apiKey" placeholder="AI Studioのキーを貼る" class="w-full p-4 border-2 border-gray-100 rounded-2xl mb-4 outline-none focus:border-blue-500 font-mono">
+        <textarea id="mainContent" rows="4" class="w-full p-4 border-2 border-gray-100 rounded-2xl mb-4 outline-none" placeholder="テスト用入力...">こんにちは。接続テストです。成功、と返してください。</textarea>
+        <button onclick="smartConnect()" id="btn" class="w-full bg-blue-500 text-white py-5 rounded-2xl font-bold text-xl hover:bg-blue-600 active:scale-95 transition-all">AIを起動する</button>
+        <div id="st" class="mt-4 text-center text-[10px] font-bold text-gray-400 italic"></div>
+        <div id="res" class="mt-4 p-5 bg-blue-50 text-blue-800 rounded-2xl text-sm hidden border border-blue-100"></div>
     </div>
 
     <script>
-        const KEY = 'NOTE_V38_MASTER';
-        let store = JSON.parse(localStorage.getItem(KEY)) || { tweets: [], apiKey: "", userInfo: "", style: "" };
+        async function smartConnect() {
+            const k = document.getElementById('apiKey').value;
+            if(!k) return alert('キーを貼ってください');
+            const btn = document.getElementById('btn');
+            const st = document.getElementById('st');
+            const res = document.getElementById('res');
+            
+            btn.disabled = true; st.innerText = "Connecting..."; res.classList.add('hidden');
 
-        // データの自動救出（これまで書いてきたメモをすべて復活させます）
-        const oldKeys = ['NOTE_ASSISTANT_V37_DATA', 'NOTE_APP_V28_FINAL', 'NOTE_PRO_V26_DATA', 'note_t_all'];
-        oldKeys.forEach(k => {
-            const d = JSON.parse(localStorage.getItem(k));
-            const list = Array.isArray(d) ? d : (d?.tweets || []);
-            list.forEach(i => {
-                const txt = i.t || i.text;
-                if (txt && !store.tweets.some(t => t.t === txt)) store.tweets.push({ t: txt, d: i.d || i.date || new Date().toLocaleString() });
-            });
-        });
-
-        const apiKeyEl = document.getElementById('apiKey');
-        const personalInfo = document.getElementById('personalInfo');
-        const currentStyle = document.getElementById('currentStyle');
-        const mainContent = document.getElementById('mainContent');
-
-        function load() {
-            apiKeyEl.value = store.apiKey || "";
-            personalInfo.value = store.userInfo || "";
-            currentStyle.value = store.style || "";
-            renderTimeline();
-        }
-
-        function saveAll() {
-            store.apiKey = apiKeyEl.value;
-            store.userInfo = personalInfo.value;
-            store.style = currentStyle.value;
-            localStorage.setItem(KEY, JSON.stringify(store));
-            renderTimeline();
-        }
-        apiKeyEl.oninput = saveAll;
-
-        function postTweet() {
-            const input = document.getElementById('tweetInput');
-            if(!input.value.trim()) return;
-            store.tweets.unshift({ t: input.value.trim(), d: new Date().toLocaleString('ja-JP') });
-            saveAll();
-            input.value = '';
-        }
-
-        function renderTimeline() {
-            const tl = document.getElementById('timeline');
-            tl.innerHTML = store.tweets.map((t, i) => `
-                <div class="x-post">
-                    <div class="flex justify-between mb-1">
-                        <span class="text-[10px] text-gray-400 font-mono">${t.d}</span>
-                        <div class="flex gap-2">
-                            <button onclick="addText(${i})" class="text-note font-bold text-xs">追加</button>
-                            <button onclick="delT(${i})" class="text-red-300 text-xs">削除</button>
-                        </div>
-                    </div>
-                    <p class="text-sm">${t.t}</p>
-                </div>
-            `).join('');
-        }
-        function addText(i) { mainContent.value += (mainContent.value ? '\n\n' : '') + store.tweets[i].t; }
-        function delT(i) { if(confirm('削除しますか？')) { store.tweets.splice(i,1); saveAll(); } }
-
-        // --- AI通信：モデル名の不一致を解消 ---
-        async function generateDraft() {
-            const k = apiKeyEl.value; if(!k) return alert('APIキーを貼ってください');
-            document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('resultContainer').classList.add('hidden');
-
-            try {
-                // モデル名を現在確実に提供されている「gemini-1.5-flash-latest」に固定
-                const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${k}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: `背景:${store.userInfo}\n文体:${store.style}\n内容:${mainContent.value}\n上記でNote構成案を作成して。` }] }] })
-                });
-                const d = await r.json();
-                if(d.error) throw new Error(d.error.message);
-                document.getElementById('resultBody').innerText = d.candidates[0].content.parts[0].text;
-                document.getElementById('resultContainer').classList.remove('hidden');
-                document.getElementById('resultContainer').scrollIntoView({ behavior: 'smooth' });
-            } catch (e) {
-                alert('エラー: ' + e.message);
-            } finally {
-                document.getElementById('loading').classList.add('hidden');
+            // 今動く可能性が最も高い2つのモデルを順番に試す
+            const models = ['gemini-2.0-flash-exp', 'gemini-1.5-flash-latest'];
+            
+            for (let model of models) {
+                st.innerText = `Trying ${model}...`;
+                try {
+                    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${k}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: document.getElementById('mainContent').value }] }] })
+                    });
+                    const d = await r.json();
+                    if(d.error) throw new Error(d.error.message);
+                    
+                    res.innerText = `【成功】${model}で接続しました。\n\n` + d.candidates[0].content.parts[0].text;
+                    res.classList.remove('hidden');
+                    st.innerText = "SUCCESS!";
+                    btn.disabled = false;
+                    return;
+                } catch (e) {
+                    console.warn(model + " failed: " + e.message);
+                }
             }
-        }
-
-        load();
-
-        let rec;
-        if ('webkitSpeechRecognition' in window) {
-            rec = new webkitSpeechRecognition(); rec.lang = 'ja-JP'; rec.continuous = true;
-            rec.onresult = (e) => { for (let i = e.resultIndex; i < e.results.length; ++i) mainContent.value += e.results[i][0].transcript; };
-            document.getElementById('recordBtn').onclick = (e) => {
-                const b = e.target;
-                if(b.classList.contains('recording')) { rec.stop(); b.classList.remove('recording'); }
-                else { rec.start(); b.classList.add('recording'); }
-            };
+            alert("全モデルでNotFoundになりました。AI StudioのPlaygroundでAIと会話ができるか再度確認してください。");
+            btn.disabled = false;
+            st.innerText = "FAILED";
         }
     </script>
 </body>
