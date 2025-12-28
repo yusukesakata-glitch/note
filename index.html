@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Note執筆アシスタント Pro v3</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { colors: { note: '#2cb696' } } } }
+    </script>
+    <style>
+        body { font-family: -apple-system, sans-serif; }
+        .recording { animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen pb-20 text-slate-800">
+    <div class="max-w-4xl mx-auto p-4 md:p-8">
+        <header class="mb-8 flex justify-between items-end">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900 tracking-tight">📝 Note Assistant <span class="text-note text-sm">Pro v3</span></h1>
+                <p class="text-slate-500 mt-1 text-sm">文体マネージャー ＆ アイディア・ハンター搭載</p>
+            </div>
+            <input type="password" id="apiKey" placeholder="API Key" class="p-2 border rounded text-xs w-32 focus:w-64 transition-all">
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <div class="lg:col-span-1 space-y-6">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 class="font-bold text-sm text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        👥 文体プロファイル
+                    </h2>
+                    <div class="space-y-4">
+                        <select id="profileSelect" class="w-full p-2 border rounded-lg bg-slate-50 font-bold text-sm">
+                            </select>
+                        <div class="flex gap-2">
+                            <button onclick="addProfile()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs py-2 rounded-lg font-bold transition">新規追加</button>
+                            <button onclick="deleteProfile()" class="bg-red-50 hover:bg-red-100 text-red-600 text-xs px-3 py-2 rounded-lg font-bold transition">削除</button>
+                        </div>
+                        <textarea id="currentStyle" rows="8" placeholder="お手本の文章をここに保存..." 
+                            class="w-full p-3 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-note focus:outline-none"></textarea>
+                        <button onclick="saveCurrentProfile()" class="w-full bg-slate-800 text-white text-xs py-2 rounded-lg font-bold hover:bg-black transition">プロファイルを保存</button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 class="font-bold text-sm text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        🕵️ アイディア・ハンター
+                    </h2>
+                    <p class="text-[10px] text-slate-500 mb-2">日常のメモ、最近の悩み、生活の変化などを入力してください。</p>
+                    <textarea id="lifeLog" rows="6" placeholder="例：最近カフェ代が高くて困る。夜型から朝型に変えたい。散歩中に見つけた看板が変だった..." 
+                        class="w-full p-3 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50/30"></textarea>
+                    <button onclick="huntIdeas()" id="btn-hunt" class="w-full mt-3 bg-blue-600 text-white text-xs py-3 rounded-lg font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-100 flex items-center justify-center gap-2">
+                        <span>🔎</span> 生活からネタを探す
+                    </button>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 space-y-6">
+                
+                <div class="bg-white p-6 rounded-2xl shadow-md border-t-4 border-note">
+                    <div class="flex items-center gap-4 mb-6">
+                        <button id="recordBtn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-blue-100">
+                            <span id="recordText">🎙️ 音声入力</span>
+                        </button>
+                        <select id="templateType" class="flex-1 p-4 border border-slate-200 rounded-xl font-bold bg-white text-sm outline-none">
+                            <option value="エッセイ型">エッセイ型</option>
+                            <option value="気づき・学び型">気づき・学び型</option>
+                            <option value="ハウツー紹介型">ハウツー紹介型</option>
+                        </select>
+                    </div>
+                    <textarea id="mainContent" rows="5" placeholder="話したいこと、またはAIが見つけたネタをここに入れてください..." 
+                        class="w-full p-4 border border-slate-200 rounded-xl mb-4 focus:ring-2 focus:ring-note focus:outline-none min-h-[150px]"></textarea>
+                    <button onclick="generateDraft()" id="btn-gen" class="w-full bg-note text-white font-bold py-4 rounded-xl hover:brightness-110 transition shadow-lg shadow-green-100 text-lg">
+                        AI編集会議を開始 🚀
+                    </button>
+                </div>
+
+                <div id="loading" class="hidden py-12 text-center animate-pulse">
+                    <div class="text-note font-bold text-xl mb-2">AIがあなたの分身として思考中...</div>
+                    <div class="text-slate-400 text-sm">文体を再現し、最高の構成を練り上げています</div>
+                </div>
+
+                <div id="resultContainer" class="hidden space-y-6">
+                    <div class="bg-white p-6 md:p-10 rounded-3xl shadow-2xl border border-slate-200 relative">
+                        <div class="flex justify-between items-center mb-6 pb-4 border-b">
+                            <h2 id="resultTitle" class="text-xl font-bold">✨ 解析結果</h2>
+                            <button onclick="copyResult()" class="text-xs bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-full font-bold">コピー</button>
+                        </div>
+                        <div id="resultBody" class="whitespace-pre-wrap leading-relaxed text-slate-700 prose prose-slate max-w-none"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- データ管理 ---
+        let profiles = JSON.parse(localStorage.getItem('note_v3_profiles')) || { "自分": "" };
+        let currentProfileName = localStorage.getItem('note_v3_current_profile') || "自分";
+
+        const apiKeyEl = document.getElementById('apiKey');
+        const profileSelect = document.getElementById('profileSelect');
+        const currentStyle = document.getElementById('currentStyle');
+        const lifeLog = document.getElementById('lifeLog');
+
+        // 初期化
+        apiKeyEl.value = localStorage.getItem('note_v3_api_key') || '';
+        apiKeyEl.oninput = (e) => localStorage.setItem('note_v3_api_key', e.target.value);
+        updateProfileList();
+
+        function updateProfileList() {
+            profileSelect.innerHTML = '';
+            Object.keys(profiles).forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name; opt.innerText = name;
+                if(name === currentProfileName) opt.selected = true;
+                profileSelect.appendChild(opt);
+            });
+            currentStyle.value = profiles[currentProfileName];
+        }
+
+        profileSelect.onchange = (e) => {
+            currentProfileName = e.target.value;
+            localStorage.setItem('note_v3_current_profile', currentProfileName);
+            currentStyle.value = profiles[currentProfileName];
+        };
+
+        function saveCurrentProfile() {
+            profiles[currentProfileName] = currentStyle.value;
+            localStorage.setItem('note_v3_profiles', JSON.stringify(profiles));
+            alert('保存しました');
+        }
+
+        function addProfile() {
+            const name = prompt('新しいプロファイル名を入力してください（例：Aさん）');
+            if(name && !profiles[name]) {
+                profiles[name] = "";
+                currentProfileName = name;
+                updateProfileList();
+            }
+        }
+
+        function deleteProfile() {
+            if(Object.keys(profiles).length <= 1) return alert('最後の1つは削除できません');
+            if(confirm(`${currentProfileName}を削除しますか？`)) {
+                delete profiles[currentProfileName];
+                currentProfileName = Object.keys(profiles)[0];
+                updateProfileList();
+                localStorage.setItem('note_v3_profiles', JSON.stringify(profiles));
+            }
+        }
+
+        // --- 音声認識 ---
+        let recognition;
+        const recordBtn = document.getElementById('recordBtn');
+        if ('webkitSpeechRecognition' in window) {
+            recognition = new webkitSpeechRecognition();
+            recognition.lang = 'ja-JP'; recognition.continuous = true; recognition.interimResults = true;
+            recognition.onresult = (e) => {
+                let txt = ''; for (let i = e.resultIndex; i < e.results.length; ++i) txt += e.results[i][0].transcript;
+                document.getElementById('mainContent').value = txt;
+            };
+            recordBtn.onclick = () => {
+                if(recordBtn.classList.contains('recording')) {
+                    recognition.stop();
+                    recordBtn.classList.remove('recording', 'bg-red-500');
+                    recordBtn.innerText = "🎙️ 音声入力";
+                } else {
+                    recognition.start();
+                    recordBtn.classList.add('recording', 'bg-red-500');
+                    recordBtn.innerText = "🛑 停止して確定";
+                }
+            };
+        }
+
+        // --- AI API 通信 ---
+        async function callAI(prompt) {
+            const key = apiKeyEl.value;
+            if(!key) return alert('API Keyを入力してください');
+            
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('resultContainer').classList.add('hidden');
+
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const data = await res.json();
+                return data.candidates[0].content.parts[0].text;
+            } catch (e) {
+                alert('エラーが発生しました');
+                return null;
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+            }
+        }
+
+        // --- 機能1: ネタ探し ---
+        async function huntIdeas() {
+            const log = lifeLog.value;
+            if(!log) return alert('ライフログを入力してください');
+
+            const prompt = `あなたはプロのコンテンツプランナーです。以下のユーザーのライフログを読み、Noteで書くと面白い「記事のネタ」を5つ提案してください。
+単なるタイトルだけでなく、なぜそれが面白いのかという「切り口」と、どんな層に刺さるかも詳しく説明してください。
+
+【ライフログ】
+${log}
+
+【出力形式】
+1. [ネタのタイトル案]
+- 切り口: 〇〇という視点で書く
+- ターゲット: 〇〇に悩んでいる人
+...（5つ分）`;
+
+            const result = await callAI(prompt);
+            if(result) {
+                document.getElementById('resultTitle').innerText = "🔎 ネタ探しの結果";
+                document.getElementById('resultBody').innerText = result;
+                document.getElementById('resultContainer').classList.remove('hidden');
+                document.getElementById('resultContainer').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // --- 機能2: 執筆構成案作成 ---
+        async function generateDraft() {
+            const content = document.getElementById('mainContent').value;
+            const style = currentStyle.value;
+            const type = document.getElementById('templateType').value;
+
+            if(!content) return alert('内容を入力してください');
+
+            const prompt = `あなたはプロのNoteライターです。以下の【文体サンプル】を分析し、今回のネタを記事にしてください。
+【文体サンプル】
+${style || "一般的で読みやすいNoteの文体"}
+
+【今回のネタ・メモ】
+${content}
+
+【型】: ${type}
+
+【出力事項】
+1. タイトル案(3つ)
+2. 共感を呼ぶ導入文（サンプルの文体を完全に再現したもの）
+3. 章立て(H2)と各章のポイント
+4. ハッシュタグ10個
+5. 画像生成用英語プロンプト
+6. 編集者からのコメント（モチベアップ！）`;
+
+            const result = await callAI(prompt);
+            if(result) {
+                document.getElementById('resultTitle').innerText = "✨ 構成案 ＆ 最適化分析";
+                document.getElementById('resultBody').innerText = result;
+                document.getElementById('resultContainer').classList.remove('hidden');
+                document.getElementById('resultContainer').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function copyResult() {
+            navigator.clipboard.writeText(document.getElementById('resultBody').innerText);
+            alert('コピーしました！');
+        }
+    </script>
+</body>
+</html>
