@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Note Assistant Pro v8</title>
+    <title>Note Assistant v9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: { 
                     colors: { note: '#2cb696', noteHover: '#24957a', xBlue: '#1d9bf0' },
-                    fontSize: { 'base': '18px', 'lg': '20px', 'xl': '24px' }
+                    fontSize: { 'base': '14px', 'lg': '16px' }
                 }
             }
         }
@@ -19,124 +19,103 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: #f8f9fa; color: #1a1a1a;
-            font-size: 18px; /* 全体的に文字を大きく設定 */
+            font-size: 14px; /* 全体的に文字を小さく設定 */
         }
-        .note-card { background: white; border: 1px solid #e1e4e8; border-radius: 12px; }
-        .x-post { border-bottom: 1px solid #eff3f4; padding: 20px; }
-        textarea, input, select { font-size: 18px !important; }
-        button { transition: all 0.2s; }
+        .note-card { background: white; border: 1px solid #e1e4e8; border-radius: 8px; }
+        .x-post { border-bottom: 1px solid #eff3f4; padding: 12px; }
+        textarea, input, select { font-size: 14px !important; }
         .recording { animation: pulse 1.5s infinite; background-color: #ff5a5f !important; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
     </style>
 </head>
-<body class="min-h-screen pb-20">
+<body class="min-h-screen pb-10">
 
-    <header class="sticky top-0 z-50 bg-white border-b border-[#e1e4e8] px-6 py-4 mb-6">
-        <div class="max-w-6xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold tracking-tight">Note Assistant</h1>
-            <input type="password" id="apiKey" placeholder="API Key" class="p-3 border rounded-lg focus:border-note outline-none w-48 bg-[#f8f9fa] text-sm">
+    <header class="sticky top-0 z-50 bg-white border-b border-[#e1e4e8] px-4 py-2 mb-4">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
+            <h1 class="text-sm font-bold tracking-tight">Note Assistant</h1>
+            <input type="password" id="apiKey" placeholder="API Keyを入力" class="p-2 border rounded-md focus:border-note outline-none w-40 bg-[#f8f9fa] text-xs">
         </div>
     </header>
 
-    <div class="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div class="max-w-5xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <aside class="lg:col-span-5 space-y-6">
-            
+        <aside class="lg:col-span-4 space-y-4">
             <details class="note-card shadow-sm overflow-hidden" open>
-                <summary class="p-5 font-bold cursor-pointer bg-gray-50 hover:bg-gray-100 transition border-b">文体プロファイル設定</summary>
-                <div class="p-6 space-y-5">
-                    <div class="flex gap-3">
-                        <select id="profileSelect" class="flex-1 p-3 bg-white border rounded-xl font-bold outline-none"></select>
-                        <button onclick="addProfile()" class="text-note font-bold px-2">新規</button>
-                    </div>
-                    
+                <summary class="p-3 font-bold cursor-pointer bg-gray-50 border-b text-xs">文体プロファイル設定</summary>
+                <div class="p-4 space-y-3">
                     <div class="flex gap-2">
-                        <input type="text" id="fetchUrl" placeholder="Note記事のURL" class="flex-1 p-3 border rounded-lg outline-none focus:border-note">
-                        <button onclick="fetchNoteContent()" id="fetchBtn" class="bg-note text-white px-4 rounded-lg font-bold text-sm">取得</button>
+                        <select id="profileSelect" class="flex-1 p-2 bg-white border rounded-md font-bold outline-none text-xs"></select>
+                        <button onclick="addProfile()" class="text-note font-bold text-xs">新規</button>
                     </div>
-
-                    <textarea id="currentStyle" rows="5" placeholder="お手本の文章を貼り付けて保存してください。" 
-                        class="w-full p-4 bg-gray-50 rounded-xl leading-relaxed outline-none border focus:bg-white"></textarea>
-                    <button onclick="saveCurrentProfile()" class="w-full bg-gray-900 text-white py-4 rounded-xl font-bold hover:bg-black">プロファイルを保存</button>
+                    <div class="flex gap-2">
+                        <input type="text" id="fetchUrl" placeholder="NoteのURL" class="flex-1 p-2 border rounded-md outline-none text-xs">
+                        <button onclick="fetchNoteContent()" id="fetchBtn" class="bg-note text-white px-3 rounded-md font-bold text-xs">取得</button>
+                    </div>
+                    <textarea id="currentStyle" rows="4" placeholder="お手本の文章を貼り付け" class="w-full p-2 bg-gray-50 rounded-md text-xs border focus:bg-white"></textarea>
+                    <button onclick="saveCurrentProfile()" class="w-full bg-gray-800 text-white py-2 rounded-md font-bold text-xs hover:bg-black">保存</button>
                 </div>
             </details>
 
-            <div class="note-card shadow-sm overflow-hidden">
-                <div class="p-6 border-b bg-white">
-                    <textarea id="tweetInput" rows="3" placeholder="いまどうしてる？" 
-                        class="w-full p-2 text-xl outline-none resize-none placeholder:text-gray-400"></textarea>
-                    <div class="flex justify-end mt-4">
-                        <button onclick="postTweet()" class="bg-xBlue text-white font-bold px-8 py-3 rounded-full text-lg">投稿</button>
+            <div class="note-card shadow-sm overflow-hidden text-xs">
+                <div class="p-4 border-b bg-white text-xs">
+                    <textarea id="tweetInput" rows="2" placeholder="いまどうしてる？" class="w-full p-1 outline-none resize-none"></textarea>
+                    <div class="flex justify-end mt-2">
+                        <button onclick="postTweet()" class="bg-xBlue text-white font-bold px-4 py-1 rounded-full">投稿</button>
                     </div>
                 </div>
-
-                <div class="p-3 bg-gray-50 border-b flex gap-3">
-                    <button onclick="analyzeTweets()" class="flex-1 bg-white border border-gray-300 py-3 rounded-xl font-bold text-sm">ネタを分析</button>
-                    <button onclick="clearTimeline()" class="px-4 text-red-500 text-sm font-bold">全削除</button>
+                <div class="p-2 bg-gray-50 border-b flex gap-2">
+                    <button onclick="analyzeTweets()" class="flex-1 bg-white border py-1 rounded-md font-bold text-[10px]">ネタ分析</button>
+                    <button onclick="clearTimeline()" class="px-2 text-red-400 text-[10px]">全削除</button>
                 </div>
-
-                <div id="timeline" class="max-h-[600px] overflow-y-auto bg-white text-lg">
-                    </div>
+                <div id="timeline" class="max-h-60 overflow-y-auto bg-white"></div>
             </div>
         </aside>
 
-        <main class="lg:col-span-7 space-y-6">
-            <div class="note-card p-6 md:p-10 shadow-sm border-t-8 border-note relative">
-                <div class="flex justify-between items-center mb-8">
-                    <h2 class="text-xl font-bold">執筆エディタ</h2>
-                    <select id="templateType" class="p-2 border rounded-lg font-bold text-sm bg-gray-50">
+        <main class="lg:col-span-8 space-y-4">
+            <div class="note-card p-6 shadow-sm border-t-4 border-note">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-bold text-sm">執筆エディタ</h2>
+                    <select id="templateType" class="p-1 border rounded bg-gray-50 text-xs">
                         <option value="エッセイ型">エッセイ</option>
                         <option value="気づき・学び型">気づき・学び</option>
                         <option value="ハウツー紹介型">ハウツー</option>
                     </select>
                 </div>
-
-                <button id="recordBtn" class="w-full bg-note text-white font-bold py-5 rounded-xl flex items-center justify-center gap-3 mb-6 shadow-lg shadow-green-100">
-                    <span id="recordText" class="text-xl">音声入力を開始</span>
-                </button>
-
-                <textarea id="mainContent" rows="12" placeholder="内容を入力してください。" 
-                    class="w-full text-xl leading-relaxed outline-none placeholder:text-gray-300 min-h-[400px]"></textarea>
-                
-                <div class="flex justify-between text-sm text-gray-500 mb-6 font-bold bg-gray-50 p-3 rounded-lg">
+                <button id="recordBtn" class="w-full bg-note text-white font-bold py-2 rounded-md text-sm mb-4">音声入力開始</button>
+                <textarea id="mainContent" rows="10" placeholder="内容を入力してください。" class="w-full text-sm leading-relaxed outline-none border-none min-h-[300px]"></textarea>
+                <div class="flex justify-between text-[10px] text-gray-400 font-bold border-t pt-2 mt-2">
                     <span>文字数: <span id="charCount">0</span></span>
                     <span>読了目安: 約 <span id="readTime">0</span> 分</span>
                 </div>
-
-                <button onclick="generateDraft()" id="btn-gen" class="w-full bg-gray-900 text-white font-bold py-6 rounded-xl text-xl shadow-xl hover:bg-black">
-                    構成案を作成する
-                </button>
+                <button onclick="generateDraft()" id="btn-gen" class="w-full bg-gray-800 text-white font-bold py-3 rounded-md text-sm mt-4 hover:bg-black transition-colors">構成案を作成</button>
             </div>
 
-            <div id="loading" class="hidden text-center py-10">
-                <p class="text-note font-bold text-xl animate-pulse">分析中...</p>
-            </div>
+            <div id="loading" class="hidden text-center py-4 text-note font-bold text-sm animate-pulse">分析中...</div>
 
             <div id="resultContainer" class="hidden">
-                <div class="bg-white p-8 md:p-12 rounded-2xl shadow-xl border border-gray-200">
-                    <div class="flex justify-between items-center mb-10 border-b pb-6">
-                        <span class="text-lg font-bold">AI作成の構成案</span>
-                        <button onclick="copyResult()" class="text-note font-bold border-2 border-note px-6 py-2 rounded-full">コピー</button>
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                    <div class="flex justify-between items-center mb-6 border-b pb-2">
+                        <span class="text-sm font-bold">構成案</span>
+                        <button onclick="copyResult()" class="text-note font-bold text-xs border border-note px-4 py-1 rounded-full">コピー</button>
                     </div>
-                    <div id="resultBody" class="text-gray-900 leading-loose text-xl whitespace-pre-wrap"></div>
+                    <div id="resultBody" class="text-gray-800 leading-relaxed text-sm whitespace-pre-wrap"></div>
                 </div>
             </div>
         </main>
     </div>
 
     <script>
-        // データ管理
-        let profiles = JSON.parse(localStorage.getItem('note_v8_profiles')) || { "デフォルト": "" };
-        let currentProfileName = localStorage.getItem('note_v8_current_profile') || "デフォルト";
-        let tweets = JSON.parse(localStorage.getItem('note_v8_tweets')) || [];
+        let profiles = JSON.parse(localStorage.getItem('note_v9_profiles')) || { "デフォルト": "" };
+        let currentProfileName = localStorage.getItem('note_v9_current_profile') || "デフォルト";
+        let tweets = JSON.parse(localStorage.getItem('note_v9_tweets')) || [];
 
         const apiKeyEl = document.getElementById('apiKey');
         const profileSelect = document.getElementById('profileSelect');
         const currentStyle = document.getElementById('currentStyle');
         const mainContent = document.getElementById('mainContent');
 
-        apiKeyEl.value = localStorage.getItem('note_v8_api_key') || '';
-        apiKeyEl.oninput = (e) => localStorage.setItem('note_v8_api_key', e.target.value);
+        apiKeyEl.value = localStorage.getItem('note_v9_api_key') || '';
+        apiKeyEl.oninput = (e) => localStorage.setItem('note_v9_api_key', e.target.value);
 
         function updateProfileList() {
             profileSelect.innerHTML = '';
@@ -150,41 +129,37 @@
         }
         profileSelect.onchange = (e) => {
             currentProfileName = e.target.value;
-            localStorage.setItem('note_v8_current_profile', currentProfileName);
+            localStorage.setItem('note_v9_current_profile', currentProfileName);
             currentStyle.value = profiles[currentProfileName];
         };
         function saveCurrentProfile() {
             profiles[currentProfileName] = currentStyle.value;
-            localStorage.setItem('note_v8_profiles', JSON.stringify(profiles));
-            alert('保存完了');
+            localStorage.setItem('note_v9_profiles', JSON.stringify(profiles));
+            alert('保存しました');
         }
         function addProfile() {
             const name = prompt('名前を入力');
             if(name && !profiles[name]) { profiles[name] = ""; currentProfileName = name; updateProfileList(); }
         }
 
-        // タイムライン機能
         function postTweet() {
             const val = document.getElementById('tweetInput').value.trim();
             if(!val) return;
             tweets.unshift({ text: val, date: new Date().toLocaleDateString() });
-            localStorage.setItem('note_v8_tweets', JSON.stringify(tweets));
+            localStorage.setItem('note_v9_tweets', JSON.stringify(tweets));
             document.getElementById('tweetInput').value = '';
             renderTimeline();
         }
         function renderTimeline() {
             const timeline = document.getElementById('timeline');
-            if(tweets.length === 0) {
-                timeline.innerHTML = '<p class="p-10 text-center text-gray-400">投稿はありません</p>';
-                return;
-            }
+            if(tweets.length === 0) { timeline.innerHTML = '<p class="p-4 text-center text-gray-400 text-[10px]">なし</p>'; return; }
             timeline.innerHTML = tweets.map((t, i) => `
-                <div class="x-post">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-sm font-bold text-gray-400">${t.date}</span>
-                        <div class="flex gap-4">
-                            <button onclick="sendToEditor(${i})" class="text-note font-bold text-sm">エディタへ</button>
-                            <button onclick="deleteTweet(${i})" class="text-red-300 text-sm">削除</button>
+                <div class="x-post text-[11px]">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-gray-400">${t.date}</span>
+                        <div class="flex gap-2 text-xs">
+                            <button onclick="sendToEditor(${i})" class="text-note">追加</button>
+                            <button onclick="deleteTweet(${i})" class="text-red-300">消去</button>
                         </div>
                     </div>
                     <p>${t.text}</p>
@@ -192,13 +167,12 @@
             `).join('');
         }
         function sendToEditor(i) {
-            mainContent.value += (mainContent.value ? '\n\n' : '') + tweets[i].text;
+            mainContent.value += (mainContent.value ? '\n' : '') + tweets[i].text;
             updateCharCount();
         }
-        function deleteTweet(i) { tweets.splice(i, 1); localStorage.setItem('note_v8_tweets', JSON.stringify(tweets)); renderTimeline(); }
-        function clearTimeline() { if(confirm('全削除しますか？')) { tweets = []; localStorage.setItem('note_v8_tweets', JSON.stringify(tweets)); renderTimeline(); } }
+        function deleteTweet(i) { tweets.splice(i, 1); localStorage.setItem('note_v9_tweets', JSON.stringify(tweets)); renderTimeline(); }
+        function clearTimeline() { if(confirm('消去しますか？')) { tweets = []; localStorage.setItem('note_v9_tweets', JSON.stringify(tweets)); renderTimeline(); } }
 
-        // エディタ計測
         function updateCharCount() {
             const len = mainContent.value.length;
             document.getElementById('charCount').innerText = len;
@@ -206,12 +180,13 @@
         }
         mainContent.oninput = updateCharCount;
 
-        // AI通信
         async function callAI(prompt) {
             const key = apiKeyEl.value;
-            if(!key) return alert('API Keyを入力してください');
+            if(!key) return alert('画面上の API Key が空です。');
+            
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('resultContainer').classList.add('hidden');
+            
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
                     method: 'POST',
@@ -219,14 +194,22 @@
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
                 const data = await res.json();
+                
+                if (data.error) throw new Error(data.error.message);
+                
                 return data.candidates[0].content.parts[0].text;
-            } catch (e) { alert('エラー'); return null; }
-            finally { document.getElementById('loading').classList.add('hidden'); }
+            } catch (e) {
+                alert('エラー内容: ' + e.message);
+                return null;
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+            }
         }
 
         async function analyzeTweets() {
+            if(tweets.length === 0) return alert('投稿がありません');
             const txt = tweets.map(t => t.text).join('\n');
-            const res = await callAI(`以下の投稿からNoteで反響が出そうなネタを3つ提案して。簡潔に。\n\n${txt}`);
+            const res = await callAI(`以下の投稿からNoteで反響が出そうなネタを3つ提案して。文中の絵文字は削除し、簡潔に。\n\n${txt}`);
             if(res) {
                 document.getElementById('resultBody').innerText = res;
                 document.getElementById('resultContainer').classList.remove('hidden');
@@ -234,7 +217,8 @@
         }
 
         async function generateDraft() {
-            const res = await callAI(`文体を再現してNoteの構成案を作って。\n文体：${currentStyle.value}\n内容：${mainContent.value}\n型：${document.getElementById('templateType').value}`);
+            if(!mainContent.value) return alert('本文を入力してください');
+            const res = await callAI(`文体を再現してNoteの構成案を作って。絵文字は使わず、自然な日本語で。\n文体：${currentStyle.value}\n内容：${mainContent.value}\n型：${document.getElementById('templateType').value}`);
             if(res) {
                 document.getElementById('resultBody').innerText = res;
                 document.getElementById('resultContainer').classList.remove('hidden');
@@ -242,11 +226,25 @@
             }
         }
 
-        function copyResult() { navigator.clipboard.writeText(document.getElementById('resultBody').innerText); alert('コピー完了'); }
+        async function fetchNoteContent() {
+            const url = document.getElementById('fetchUrl').value;
+            if(!url) return alert('URLを入力');
+            try {
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data.contents, 'text/html');
+                const articleBody = doc.querySelector('.p-article__body') || doc.body;
+                currentStyle.value = articleBody.innerText.substring(0, 1000);
+                alert('文体を読み込みました。保存ボタンを押してください。');
+            } catch (e) { alert('URL取得エラー'); }
+        }
+
+        function copyResult() { navigator.clipboard.writeText(document.getElementById('resultBody').innerText); alert('コピーしました'); }
         updateProfileList();
         renderTimeline();
 
-        // 音声入力
         let recognition; const recordBtn = document.getElementById('recordBtn');
         if ('webkitSpeechRecognition' in window) {
             recognition = new webkitSpeechRecognition(); recognition.lang = 'ja-JP'; recognition.continuous = true; recognition.interimResults = true;
@@ -255,8 +253,8 @@
                 mainContent.value = txt; updateCharCount();
             };
             recordBtn.onclick = () => {
-                if(recordBtn.classList.contains('recording')) { recognition.stop(); recordBtn.classList.remove('recording'); document.getElementById('recordText').innerText = "音声入力を開始"; }
-                else { recognition.start(); recordBtn.classList.add('recording'); document.getElementById('recordText').innerText = "停止する"; }
+                if(recordBtn.classList.contains('recording')) { recognition.stop(); recordBtn.classList.remove('recording'); document.getElementById('recordText').innerText = "音声入力開始"; }
+                else { recognition.start(); recordBtn.classList.add('recording'); document.getElementById('recordText').innerText = "停止"; }
             };
         }
     </script>
