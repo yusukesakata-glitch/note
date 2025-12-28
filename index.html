@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Note Assistant v22</title>
+    <title>Note Assistant v23</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { theme: { extend: { colors: { note: '#2cb696', noteHover: '#24957a', xBlue: '#1d9bf0' } } } }
@@ -20,14 +20,14 @@
 </head>
 <body class="p-1">
     <header class="flex justify-between items-center mb-2 px-1">
-        <h1 class="font-bold text-[10px] text-gray-400 uppercase tracking-widest">Note Assistant v22</h1>
+        <h1 class="font-bold text-[10px] text-gray-400 uppercase tracking-widest">Note Assistant v23</h1>
         <input type="password" id="apiKey" placeholder="Gemini API Key" class="p-1 border rounded w-32 bg-white text-[10px] outline-none">
     </header>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-2 max-w-6xl mx-auto">
         <aside class="lg:col-span-4 space-y-2">
             <div class="card p-2 border-t-2 border-orange-400">
-                <h2 class="text-[10px] font-bold text-orange-600 mb-1">背景・経歴</h2>
+                <h2 class="text-[10px] font-bold text-orange-600 mb-1 tracking-tighter uppercase">あなたの背景・経歴</h2>
                 <textarea id="personalInfo" rows="3" placeholder="AIが提案に使用します" class="w-full p-1 bg-orange-50/20 border rounded text-[10px] outline-none"></textarea>
                 <button onclick="savePersonalInfo()" class="w-full mt-1 bg-orange-400 text-white py-1 rounded text-[10px] font-bold">情報を保存</button>
             </div>
@@ -53,78 +53,63 @@
                     <input type="text" id="tweetSearch" placeholder="検索..." class="flex-1 p-1 border rounded text-[10px] outline-none" oninput="renderTimeline()">
                 </div>
                 <button onclick="analyzeTweets()" class="w-full py-1.5 text-[9px] font-bold bg-gray-50 text-gray-400 border-b">投稿からネタ分析</button>
-                <div id="timeline" class="max-h-[350px] overflow-y-auto bg-white"></div>
+                <div id="timeline" class="max-h-[400px] overflow-y-auto bg-white"></div>
             </div>
         </aside>
 
         <main class="lg:col-span-8 space-y-2">
             <div class="card p-3 border-t-2 border-note shadow-sm">
                 <div class="flex justify-between mb-2">
-                    <button id="recordBtn" class="bg-note text-white px-3 py-1 rounded text-[10px] font-bold uppercase">Voice</button>
+                    <button id="recordBtn" class="bg-note text-white px-3 py-1 rounded text-[10px] font-bold uppercase tracking-widest">Voice</button>
                     <select id="templateType" class="p-1 border rounded text-[10px] bg-white"><option>エッセイ型</option><option>学び型</option></select>
                 </div>
-                <textarea id="mainContent" rows="15" placeholder="本文を入力..." class="w-full text-[14px] leading-relaxed outline-none min-h-[300px] p-1 border-none"></textarea>
-                <div class="text-[10px] text-gray-400 border-t pt-2 flex justify-between items-center font-mono">
-                    <span>文字数: <span id="charCount">0</span></span>
-                    <button onclick="generateDraft()" id="btn-gen" class="bg-gray-800 text-white px-6 py-2 rounded font-bold hover:bg-black uppercase">Note構成案を作成</button>
+                <textarea id="mainContent" rows="16" placeholder="本文を入力..." class="w-full text-[14px] leading-relaxed outline-none min-h-[300px] p-1 border-none"></textarea>
+                <div class="text-[10px] text-gray-400 border-t pt-2 flex justify-between items-center font-mono uppercase tracking-tighter">
+                    <span>CHARS: <span id="charCount">0</span></span>
+                    <button onclick="generateDraft()" id="btn-gen" class="bg-gray-800 text-white px-6 py-2 rounded font-bold hover:bg-black transition-all">Generate Note Draft</button>
                 </div>
             </div>
 
-            <div id="loading" class="hidden text-center py-4 text-note font-bold text-sm animate-pulse">AI Thinking...</div>
+            <div id="loading" class="hidden text-center py-4 text-note font-bold text-sm animate-pulse italic uppercase tracking-widest">AI Thinking...</div>
             <div id="resultContainer" class="hidden card p-4 border-2 border-note/20 bg-white shadow-xl">
                 <div id="resultBody" class="text-[14px] leading-relaxed whitespace-pre-wrap text-gray-800"></div>
             </div>
 
             <details class="card" open>
-                <summary class="p-2 font-bold cursor-pointer bg-gray-100 text-[10px] border-b text-gray-500 uppercase tracking-widest">提案履歴</summary>
-                <div id="historyList" class="max-h-[300px] overflow-y-auto"></div>
-                <button onclick="clearHistory()" class="w-full p-2 text-[9px] text-red-300 font-bold hover:bg-red-50">履歴をリセット</button>
+                <summary class="p-2 font-bold cursor-pointer bg-gray-100 text-[10px] border-b text-gray-500 uppercase tracking-widest">提案履歴 (Stocks)</summary>
+                <div id="historyList" class="max-h-[350px] overflow-y-auto"></div>
+                <button onclick="clearHistory()" class="w-full p-2 text-[9px] text-red-300 font-bold hover:bg-red-50 transition">Clear History</button>
             </details>
         </main>
     </div>
 
     <script>
-        // --- データ永続化・救出ロジック ---
-        // 今後、このキー名は絶対に変更しません。
-        const PERMANENT_KEYS = {
-            profiles: 'note_assistant_final_profiles',
-            current: 'note_assistant_final_current_profile',
-            tweets: 'note_assistant_final_tweets',
-            api: 'note_assistant_final_api_key',
-            user: 'note_assistant_final_user_info',
-            history: 'note_assistant_final_history'
-        };
+        const PK = { p: 'n_a_final_p', cp: 'n_a_final_cp', t: 'n_a_final_t', k: 'n_a_final_k', u: 'n_a_final_u', h: 'n_a_final_h' };
 
-        // 過去に使用した可能性のあるすべてのキーからデータを救出
-        function migrateData() {
-            const oldTweetKeys = ['note_app_t_fixed', 'note_t_all', 'note_v9_tweets', 'note_v8_tweets', 'note_v7_tweets'];
-            let rescuedTweets = JSON.parse(localStorage.getItem(PERMANENT_KEYS.tweets)) || [];
-            
-            oldTweetKeys.forEach(key => {
-                const oldData = JSON.parse(localStorage.getItem(key));
-                if (oldData && Array.isArray(oldData)) {
-                    oldData.forEach(item => {
-                        // 重複チェック（内容と日付が同じなら追加しない）
-                        const exists = rescuedTweets.some(t => (t.t === item.t || t.text === item.text) && (t.d === item.d || t.date === item.date));
-                        if (!exists) rescuedTweets.push({ t: item.t || item.text, d: item.d || item.date });
+        function migrate() {
+            const oldT = ['note_p_all', 'note_app_t_fixed', 'note_t_all', 'note_v9_tweets', 'note_v21_tweets', 'note_v20_tweets'];
+            let rT = JSON.parse(localStorage.getItem(PK.t)) || [];
+            oldT.forEach(k => {
+                const d = JSON.parse(localStorage.getItem(k));
+                if (d && Array.isArray(d)) {
+                    d.forEach(i => {
+                        const ex = rT.some(t => (t.t === (i.t || i.text)));
+                        if (!ex) rT.push({ t: i.t || i.text, d: i.d || i.date || new Date().toLocaleString() });
                     });
                 }
             });
-            localStorage.setItem(PERMANENT_KEYS.tweets, JSON.stringify(rescuedTweets));
-
-            // プロフィールとAPIキーも同様に救出
-            if (!localStorage.getItem(PERMANENT_KEYS.api)) {
-                const oldApi = localStorage.getItem('note_app_k_fixed') || localStorage.getItem('note_k_all') || localStorage.getItem('note_v9_api_key');
-                if (oldApi) localStorage.setItem(PERMANENT_KEYS.api, oldApi);
+            localStorage.setItem(PK.t, JSON.stringify(rT));
+            if (!localStorage.getItem(PK.k)) {
+                const oA = localStorage.getItem('note_k_all') || localStorage.getItem('note_app_k_fixed') || localStorage.getItem('note_k_f');
+                if (oA) localStorage.setItem(PK.k, oA);
             }
         }
+        migrate();
 
-        migrateData(); // 起動時にデータを救出
-
-        let profiles = JSON.parse(localStorage.getItem(PERMANENT_KEYS.profiles)) || { "デフォルト": "" };
-        let currentProfileName = localStorage.getItem(PERMANENT_KEYS.current) || "デフォルト";
-        let tweets = JSON.parse(localStorage.getItem(PERMANENT_KEYS.tweets)) || [];
-        let history = JSON.parse(localStorage.getItem(PERMANENT_KEYS.history)) || [];
+        let profiles = JSON.parse(localStorage.getItem(PK.p)) || { "デフォルト": "" };
+        let currentProfileName = localStorage.getItem(PK.cp) || "デフォルト";
+        let tweets = JSON.parse(localStorage.getItem(PK.t)) || [];
+        let history = JSON.parse(localStorage.getItem(PK.h)) || [];
 
         const apiKeyEl = document.getElementById('apiKey');
         const profileSelect = document.getElementById('profileSelect');
@@ -132,9 +117,9 @@
         const mainContent = document.getElementById('mainContent');
         const personalInfo = document.getElementById('personalInfo');
 
-        apiKeyEl.value = localStorage.getItem(PERMANENT_KEYS.api) || '';
-        apiKeyEl.oninput = (e) => localStorage.setItem(PERMANENT_KEYS.api, e.target.value);
-        personalInfo.value = localStorage.getItem(PERMANENT_KEYS.user) || '';
+        apiKeyEl.value = localStorage.getItem(PK.k) || '';
+        apiKeyEl.oninput = (e) => localStorage.setItem(PK.k, e.target.value);
+        personalInfo.value = localStorage.getItem(PK.u) || '';
 
         function updateProfileList() {
             profileSelect.innerHTML = '';
@@ -145,75 +130,77 @@
             });
             currentStyle.value = profiles[currentProfileName] || "";
         }
-        profileSelect.onchange = (e) => { currentProfileName = e.target.value; localStorage.setItem(PERMANENT_KEYS.current, currentProfileName); currentStyle.value = profiles[currentProfileName]; };
-        function saveCurrentProfile() { profiles[currentProfileName] = currentStyle.value; localStorage.setItem(PERMANENT_KEYS.profiles, JSON.stringify(profiles)); alert('保存完了'); }
-        function savePersonalInfo() { localStorage.setItem(PERMANENT_KEYS.user, personalInfo.value); alert('背景情報を保存しました'); }
+        profileSelect.onchange = (e) => { currentProfileName = e.target.value; localStorage.setItem(PK.cp, currentProfileName); currentStyle.value = profiles[currentProfileName]; };
+        function saveCurrentProfile() { profiles[currentProfileName] = currentStyle.value; localStorage.setItem(PK.p, JSON.stringify(profiles)); alert('保存完了'); }
+        function savePersonalInfo() { localStorage.setItem(PK.u, personalInfo.value); alert('背景情報を保存'); }
         function addProfile() { const n = prompt('プロファイル名'); if(n && !profiles[n]) { profiles[n] = ""; currentProfileName = n; updateProfileList(); } }
 
         function postTweet() {
-            const input = document.getElementById('tweetInput');
-            const v = input.value.trim();
+            const i = document.getElementById('tweetInput');
+            const v = i.value.trim();
             if(!v) return;
             tweets.unshift({ t: v, d: new Date().toLocaleString('ja-JP') });
-            localStorage.setItem(PERMANENT_KEYS.tweets, JSON.stringify(tweets));
-            input.value = '';
+            localStorage.setItem(PK.t, JSON.stringify(tweets));
+            i.value = '';
             renderTimeline();
         }
         function renderTimeline() {
-            const search = document.getElementById('tweetSearch').value.toLowerCase();
+            const s = document.getElementById('tweetSearch').value.toLowerCase();
             const tl = document.getElementById('timeline');
-            tl.innerHTML = tweets.filter(t => t.t.toLowerCase().includes(search)).map((t, i) => `
+            tl.innerHTML = tweets.filter(t => t.t.toLowerCase().includes(s)).map((t, idx) => `
                 <div class="x-post">
-                    <div class="flex justify-between text-[9px] text-gray-400 mb-0.5 font-mono">
+                    <div class="flex justify-between text-[9px] text-gray-400 mb-0.5 font-mono uppercase tracking-tighter">
                         <span>${t.d}</span>
-                        <div class="flex gap-2">
-                            <button onclick="sendToEd(${i})" class="text-note font-bold">追加</button>
-                            <button onclick="deleteTweet(${i})" class="text-red-300">消去</button>
+                        <div class="flex gap-2 font-bold tracking-widest">
+                            <button onclick="sendToEd(${idx})" class="text-note">Add</button>
+                            <button onclick="deleteTweet(${idx})" class="text-red-300">Del</button>
                         </div>
                     </div>
-                    <p class="leading-tight text-[12px] whitespace-pre-wrap">${t.t}</p>
+                    <p class="leading-snug text-[12px] whitespace-pre-wrap">${t.t}</p>
                 </div>
             `).join('');
         }
         function sendToEd(i) { mainContent.value += (mainContent.value ? '\n' : '') + tweets[i].t; updateCharCount(); }
-        function deleteTweet(i) { if(confirm('消去しますか？')) { tweets.splice(i,1); localStorage.setItem(PERMANENT_KEYS.tweets, JSON.stringify(tweets)); renderTimeline(); } }
+        function deleteTweet(i) { if(confirm('消去？')) { tweets.splice(i,1); localStorage.setItem(PK.t, JSON.stringify(tweets)); renderTimeline(); } }
 
         function addToHistory(body) {
             history.unshift({ body, d: new Date().toLocaleString() });
             if(history.length > 20) history.pop();
-            localStorage.setItem(PERMANENT_KEYS.history, JSON.stringify(history));
+            localStorage.setItem(PK.h, JSON.stringify(history));
             renderHistory();
         }
         function renderHistory() {
             const list = document.getElementById('historyList');
-            if(!history.length) { list.innerHTML = '<p class="p-6 text-center text-gray-400">履歴はありません</p>'; return; }
-            list.innerHTML = history.map((h, i) => `<div class="history-item"><div class="flex justify-between text-[9px] text-gray-400 mb-1"><span>${h.d}</span><button onclick="copyHist(${i})" class="text-note font-bold uppercase">Editor</button></div><div class="text-[11px] leading-relaxed line-clamp-2">${h.body}</div></div>`).join('');
+            if(!history.length) { list.innerHTML = '<p class="p-4 text-center text-gray-400 text-[10px] uppercase tracking-widest">No Records</p>'; return; }
+            list.innerHTML = history.map((h, i) => `<div class="history-item"><div class="flex justify-between text-[8px] text-gray-400 mb-1"><span>${h.d}</span><button onclick="copyHist(${i})" class="text-note font-bold uppercase tracking-widest">エディタへ送る</button></div><div class="text-[11px] leading-relaxed line-clamp-2">${h.body}</div></div>`).join('');
         }
-        function copyHist(i) { mainContent.value += "\n\n" + history[i].body; updateCharCount(); alert('エディタに追加しました'); }
-        function clearHistory() { if(confirm('履歴を全て削除しますか？')) { history = []; localStorage.setItem(PERMANENT_KEYS.history, JSON.stringify(history)); renderHistory(); } }
+        function copyHist(i) { mainContent.value += "\n\n" + history[i].body; updateCharCount(); alert('追加しました'); }
+        function clearHistory() { if(confirm('全削除？')) { history = []; localStorage.setItem(PK.h, JSON.stringify(history)); renderHistory(); } }
 
         async function callAI(p) {
             const k = apiKeyEl.value; if(!k) return alert('API Keyを入力してください');
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('resultContainer').classList.add('hidden');
             try {
-                const r = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${k}`, {
+                // 通信先を確実に修正
+                const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${k}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: p }] }] })
                 });
                 const d = await r.json();
                 if(d.error) throw new Error(d.error.message);
                 return d.candidates[0].content.parts[0].text;
-            } catch (e) { alert('APIエラー: ' + e.message); return null; }
-            finally { document.getElementById('loading').classList.add('hidden'); }
+            } catch (e) {
+                alert('エラー: ' + e.message); return null;
+            } finally { document.getElementById('loading').classList.add('hidden'); }
         }
 
         async function analyzeTweets() {
-            const res = await callAI(`背景：${personalInfo.value}\n投稿：${tweets.map(t=>t.t).join('\n')}\n反響が出そうなNoteネタを3つ提案してください。絵文字なし。`);
+            const res = await callAI(`背景：${personalInfo.value}\n投稿：${tweets.map(t=>t.t).join('\n')}\n反響が出そうなNoteネタを3つ提案して。絵文字なし。日本語。`);
             if(res) { showRes(res); addToHistory(res); }
         }
         async function generateDraft() {
-            const res = await callAI(`文体：${currentStyle.value}\n内容：${mainContent.value}\nNoteの構成案を作成してください。絵文字なし。`);
+            const res = await callAI(`文体サンプルを分析し再現して：\n${currentStyle.value}\n\n上記に基づき、以下の内容でNoteの構成案を作成して。絵文字なし。日本語。\n内容：\n${mainContent.value}`);
             if(res) { showRes(res); addToHistory(res); }
         }
         function showRes(t) { document.getElementById('resultBody').innerText = t; document.getElementById('resultContainer').classList.remove('hidden'); }
@@ -226,7 +213,7 @@
         if ('webkitSpeechRecognition' in window) {
             rec = new webkitSpeechRecognition(); rec.lang = 'ja-JP'; rec.continuous = true;
             rec.onresult = (e) => { let t = ''; for (let i = e.resultIndex; i < e.results.length; ++i) t += e.results[i][0].transcript; mainContent.value = t; updateCharCount(); };
-            rb.onclick = () => { if(rb.classList.contains('recording')) { rec.stop(); rb.classList.remove('recording'); rb.innerText="音声入力開始"; } else { rec.start(); rb.classList.add('recording'); rb.innerText="停止"; } };
+            rb.onclick = () => { if(rb.classList.contains('recording')) { rec.stop(); rb.classList.remove('recording'); rb.innerText="VOICE"; } else { rec.start(); rb.classList.add('recording'); rb.innerText="STOP"; } };
         }
     </script>
 </body>
