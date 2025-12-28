@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Note Assistant v26</title>
+    <title>Note Assistant v27</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { theme: { extend: { colors: { note: '#2cb696', xBlue: '#1d9bf0' } } } }
@@ -12,16 +12,15 @@
         body { font-family: sans-serif; background: #f8f9fa; font-size: 12px; color: #333; line-height: 1.4; }
         .card { background: white; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 6px; }
         textarea, input, select { font-size: 11px !important; border: 1px solid #eee; }
-        .x-post, .history-item { border-bottom: 1px solid #eee; padding: 10px; font-size: 12px; }
-        #timeline > div:first-child { background: #fff9f0; border-left: 3px solid #1d9bf0; }
+        .x-post { border-bottom: 1px solid #eee; padding: 10px; font-size: 12px; }
         .recording { animation: pulse 1s infinite; background: #ff5a5f !important; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
     </style>
 </head>
 <body class="p-1">
     <header class="flex justify-between items-center mb-2 px-1 text-gray-400">
-        <h1 class="font-bold text-[10px] uppercase tracking-widest">Note Assistant v26</h1>
-        <input type="password" id="apiKey" placeholder="AI Studio Keyを貼り付け" class="p-1 border rounded w-40 bg-white text-[10px] outline-none">
+        <h1 class="font-bold text-[10px] uppercase tracking-widest text-note">Note Assistant v27</h1>
+        <input type="password" id="apiKey" placeholder="AI Studio Keyを入力" class="p-1 border rounded w-40 bg-white text-[10px] outline-none">
     </header>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-2 max-w-6xl mx-auto">
@@ -29,15 +28,14 @@
             <div class="card p-2 border-t-2 border-orange-400">
                 <h2 class="text-[10px] font-bold text-orange-600 mb-1">背景情報</h2>
                 <textarea id="personalInfo" rows="3" placeholder="AIが提案に使用します" class="w-full p-1 bg-orange-50/20 border rounded text-[10px] outline-none"></textarea>
-                <button onclick="savePersonalInfo()" class="w-full mt-1 bg-orange-400 text-white py-1 rounded text-[10px] font-bold uppercase">Save Background</button>
+                <button onclick="saveAll()" class="w-full mt-1 bg-orange-400 text-white py-1 rounded text-[10px] font-bold uppercase">Save Background</button>
             </div>
 
             <details class="card" open>
                 <summary class="p-2 font-bold cursor-pointer bg-gray-50 text-[10px] border-b">文体学習</summary>
                 <div class="p-2 space-y-2">
-                    <select id="profileSelect" class="w-full p-1 border rounded text-[10px] font-bold outline-none"></select>
                     <textarea id="currentStyle" rows="3" placeholder="文体サンプル" class="w-full p-1 border rounded bg-gray-50 text-[10px] outline-none"></textarea>
-                    <button onclick="saveCurrentProfile()" class="w-full bg-gray-800 text-white py-1 rounded text-[10px] font-bold uppercase">Save Style</button>
+                    <button onclick="saveAll()" class="w-full bg-gray-800 text-white py-1 rounded text-[10px] font-bold uppercase">Save Style</button>
                 </div>
             </details>
 
@@ -46,7 +44,6 @@
                     <textarea id="tweetInput" rows="2" placeholder="いまどうしてる？" class="w-full outline-none text-[12px] resize-none"></textarea>
                     <div class="flex justify-end mt-1"><button onclick="postTweet()" class="bg-xBlue text-white px-4 py-1 rounded-full text-[11px] font-bold">投稿</button></div>
                 </div>
-                <div class="p-1.5 bg-gray-50 border-b"><input type="text" id="tweetSearch" placeholder="検索..." class="w-full p-1 border rounded text-[10px] outline-none" oninput="renderTimeline()"></div>
                 <div id="timeline" class="max-h-[350px] overflow-y-auto bg-white"></div>
             </div>
         </aside>
@@ -55,99 +52,59 @@
             <div class="card p-3 border-t-2 border-note shadow-sm">
                 <div class="flex justify-between mb-2">
                     <button id="recordBtn" class="bg-note text-white px-3 py-1 rounded text-[10px] font-bold">VOICE</button>
-                    <select id="templateType" class="p-1 border rounded text-[10px]"><option>エッセイ型</option><option>学び型</option></select>
                 </div>
                 <textarea id="mainContent" rows="15" placeholder="本文を入力..." class="w-full text-[14px] leading-relaxed outline-none min-h-[300px] p-1 border-none"></textarea>
-                <button onclick="generateDraft()" id="btn-gen" class="w-full bg-gray-800 text-white py-3 rounded font-bold mt-2 uppercase">構成案を作成</button>
+                <button onclick="generateDraft()" id="btn-gen" class="w-full bg-gray-800 text-white py-3 rounded font-bold mt-2 uppercase shadow-lg hover:bg-black transition-all">構成案を作成</button>
             </div>
-
             <div id="loading" class="hidden text-center py-4 text-note font-bold text-sm animate-pulse italic">Thinking...</div>
             <div id="resultContainer" class="hidden card p-4 border-2 border-note/20 bg-white shadow-xl"><div id="resultBody" class="text-[14px] leading-relaxed whitespace-pre-wrap text-gray-800"></div></div>
-
-            <details class="card" open>
-                <summary class="p-2 font-bold cursor-pointer bg-gray-100 text-[10px] border-b text-gray-500 uppercase tracking-widest">提案履歴</summary>
-                <div id="historyList" class="max-h-[300px] overflow-y-auto"></div>
-            </details>
         </main>
     </div>
 
     <script>
-        // --- データの永久固定と自動救出 ---
-        const MASTER_KEY = 'NOTE_PRO_V26_DATA'; // これから先、この名前は絶対に変えません
-        let store = JSON.parse(localStorage.getItem(MASTER_KEY)) || {
-            profiles: { "デフォルト": "" },
-            currentProfile: "デフォルト",
-            tweets: [],
-            apiKey: "",
-            userInfo: "",
-            history: []
-        };
+        const KEY = 'NOTE_PRO_V27_DATA';
+        let store = JSON.parse(localStorage.getItem(KEY)) || { tweets: [], apiKey: "", userInfo: "", style: "" };
 
-        // アップデートのたびに消えていた過去のデータをすべて救出し、新しい場所に統合
-        function rescueData() {
-            const oldKeys = ['NOTE_PRO_V25_DATA', 'n_a_f_t', 'n_a_final_t', 'note_t_all', 'note_app_t_fixed', 'note_v24_tweets'];
-            let foundCount = 0;
-            oldKeys.forEach(k => {
-                const raw = localStorage.getItem(k);
-                if(!raw) return;
-                try {
-                    const d = JSON.parse(raw);
-                    const sourceList = Array.isArray(d) ? d : (d.tweets || []);
-                    sourceList.forEach(item => {
-                        const txt = item.t || item.text;
-                        if (txt && !store.tweets.some(t => t.t === txt)) {
-                            store.tweets.push({ t: txt, d: item.d || item.date || new Date().toLocaleString() });
-                            foundCount++;
-                        }
-                    });
-                    if(d.apiKey && !store.apiKey) store.apiKey = d.apiKey;
-                    if(d.userInfo && !store.userInfo) store.userInfo = d.userInfo;
-                } catch(e) {}
+        // 過去のツイートを救出する
+        const oldKeys = ['NOTE_PRO_V26_DATA', 'NOTE_PRO_V25_DATA', 'n_a_f_t', 'n_a_final_t', 'note_t_all'];
+        oldKeys.forEach(k => {
+            const d = JSON.parse(localStorage.getItem(k));
+            const list = Array.isArray(d) ? d : (d?.tweets || []);
+            list.forEach(i => {
+                const txt = i.t || i.text;
+                if (txt && !store.tweets.some(t => t.t === txt)) store.tweets.push({ t: txt, d: i.d || i.date || new Date().toLocaleString() });
             });
-            if(foundCount > 0) saveAll();
-        }
-
-        function saveAll() { localStorage.setItem(MASTER_KEY, JSON.stringify(store)); }
-
-        rescueData();
+        });
 
         const apiKeyEl = document.getElementById('apiKey');
-        const profileSelect = document.getElementById('profileSelect');
+        const personalInfo = document.getElementById('personalInfo');
         const currentStyle = document.getElementById('currentStyle');
         const mainContent = document.getElementById('mainContent');
-        const personalInfo = document.getElementById('personalInfo');
 
         apiKeyEl.value = store.apiKey || '';
-        apiKeyEl.oninput = (e) => { store.apiKey = e.target.value; saveAll(); };
         personalInfo.value = store.userInfo || '';
+        currentStyle.value = store.style || '';
 
-        function updateProfileList() {
-            profileSelect.innerHTML = '';
-            Object.keys(store.profiles).forEach(n => {
-                const o = document.createElement('option'); o.value = n; o.innerText = n;
-                if(n === store.currentProfile) o.selected = true;
-                profileSelect.appendChild(o);
-            });
-            currentStyle.value = store.profiles[store.currentProfile] || "";
+        function saveAll() {
+            store.apiKey = apiKeyEl.value;
+            store.userInfo = personalInfo.value;
+            store.style = currentStyle.value;
+            localStorage.setItem(KEY, JSON.stringify(store));
         }
-        profileSelect.onchange = (e) => { store.currentProfile = e.target.value; saveAll(); currentStyle.value = store.profiles[store.currentProfile]; };
-        function saveCurrentProfile() { store.profiles[store.currentProfile] = currentStyle.value; saveAll(); alert('文体を保存しました'); }
-        function savePersonalInfo() { store.userInfo = personalInfo.value; saveAll(); alert('背景情報を保存しました'); }
+        apiKeyEl.oninput = saveAll;
 
-        // --- タイムライン（不具合修正済み） ---
         function postTweet() {
             const input = document.getElementById('tweetInput');
-            const val = input.value.trim();
-            if(!val) return;
-            store.tweets.unshift({ t: val, d: new Date().toLocaleString('ja-JP') });
+            if(!input.value.trim()) return;
+            store.tweets.unshift({ t: input.value.trim(), d: new Date().toLocaleString('ja-JP') });
             saveAll();
             input.value = '';
-            renderTimeline(); // 保存直後に即描画
+            renderTimeline();
         }
+
         function renderTimeline() {
-            const s = document.getElementById('tweetSearch').value.toLowerCase();
             const tl = document.getElementById('timeline');
-            tl.innerHTML = store.tweets.filter(t => t.t.toLowerCase().includes(s)).map((t, i) => `
+            tl.innerHTML = store.tweets.map((t, i) => `
                 <div class="x-post">
                     <div class="flex justify-between text-[9px] text-gray-400 mb-0.5 font-mono">
                         <span>${t.d}</span>
@@ -161,15 +118,14 @@
             `).join('');
         }
         function sendToEd(i) { mainContent.value += (mainContent.value ? '\n' : '') + store.tweets[i].t; }
-        function deleteTweet(i) { if(confirm('消去しますか？')) { store.tweets.splice(i,1); saveAll(); renderTimeline(); } }
+        function deleteTweet(i) { if(confirm('消去？')) { store.tweets.splice(i,1); saveAll(); renderTimeline(); } }
 
-        // --- AI API（最新エンドポイント v1beta を採用） ---
         async function callAI(p) {
-            const k = store.apiKey; if(!k) return alert('AI StudioのKeyを入力してください');
+            const k = apiKeyEl.value; if(!k) return alert('Keyを入力してください');
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('resultContainer').classList.add('hidden');
             try {
-                // 通信先URLを厳密な最新形式に固定
+                // 通信先URLを現在のGoogle推奨形式（v1beta/models）に厳密固定
                 const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${k}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -179,12 +135,12 @@
                 if(d.error) throw new Error(d.error.message);
                 return d.candidates[0].content.parts[0].text;
             } catch (e) {
-                alert('APIエラー: ' + e.message); return null;
+                alert('エラー: ' + e.message); return null;
             } finally { document.getElementById('loading').classList.add('hidden'); }
         }
 
         async function generateDraft() {
-            const res = await callAI(`背景：${store.userInfo}\n文体：${currentStyle.value}\n内容：${mainContent.value}\n上記に基づき、Noteの構成案を提案してください。絵文字なし。`);
+            const res = await callAI(`背景：${store.userInfo}\n文体：${store.style}\n内容：${mainContent.value}\n上記に基づきNote構成案を作成して。絵文字なし。`);
             if(res) {
                 document.getElementById('resultBody').innerText = res;
                 document.getElementById('resultContainer').classList.remove('hidden');
@@ -192,8 +148,7 @@
             }
         }
 
-        updateProfileList(); renderTimeline();
-        
+        renderTimeline();
         let rec; const rb = document.getElementById('recordBtn');
         if ('webkitSpeechRecognition' in window) {
             rec = new webkitSpeechRecognition(); rec.lang = 'ja-JP'; rec.continuous = true;
