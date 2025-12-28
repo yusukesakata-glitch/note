@@ -2,43 +2,68 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Note Assistant v29</title>
+    <title>Note Assistant v30 (Final Test)</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="p-4 max-w-xl mx-auto bg-gray-50">
-    <div class="bg-white p-4 rounded-lg shadow border-t-4 border-green-500">
-        <h1 class="font-bold text-gray-500 mb-4 uppercase text-xs tracking-widest">Connection Test v29</h1>
-        <input type="password" id="apiKey" placeholder="新しいAPIキーをここに貼る" class="w-full p-2 border rounded mb-4 text-sm">
-        <textarea id="testInput" rows="3" class="w-full p-2 border rounded mb-2 text-sm">こんにちは。Noteの書き出しを1行だけ考えてください。</textarea>
-        <button onclick="testAI()" id="btn" class="w-full bg-green-500 text-white py-3 rounded font-bold hover:bg-green-600">AIが動くかテストする</button>
-        <div id="status" class="mt-4 text-xs font-bold text-gray-400"></div>
-        <div id="res" class="mt-2 p-3 bg-gray-100 rounded text-sm whitespace-pre-wrap hidden"></div>
+<body class="p-4 max-w-xl mx-auto bg-gray-100 min-h-screen flex items-center">
+    <div class="bg-white p-6 rounded-2xl shadow-2xl border-t-8 border-green-500 w-full">
+        <h1 class="font-bold text-gray-400 mb-6 uppercase text-xs tracking-widest text-center">Final Connection v30</h1>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-[10px] font-bold text-gray-400 mb-1 uppercase">New API Key</label>
+                <input type="password" id="apiKey" placeholder="AI Studioで作った新しいキーを貼る" class="w-full p-3 border-2 border-gray-100 rounded-xl focus:border-green-400 outline-none transition-all">
+            </div>
+            
+            <button onclick="testAI()" id="btn" class="w-full bg-green-500 text-white py-4 rounded-xl font-bold hover:bg-green-600 shadow-lg transition-all active:scale-95">
+                AIを今すぐ起動する
+            </button>
+            
+            <div id="status" class="text-center text-[10px] font-bold text-gray-400 italic"></div>
+            <div id="res" class="mt-4 p-4 bg-green-50 border border-green-100 rounded-xl text-sm text-green-700 hidden leading-relaxed"></div>
+            <div id="err" class="mt-4 p-4 bg-red-50 border border-red-100 rounded-xl text-xs text-red-500 hidden font-mono"></div>
+        </div>
     </div>
 
     <script>
         async function testAI() {
             const k = document.getElementById('apiKey').value;
-            if(!k) return alert('キーを入力してください');
+            if(!k) return alert('APIキーを貼り付けてください');
+            
             const btn = document.getElementById('btn');
             const st = document.getElementById('status');
             const res = document.getElementById('res');
+            const err = document.getElementById('err');
             
-            btn.disabled = true; st.innerText = "通信中..."; res.classList.add('hidden');
+            btn.disabled = true;
+            st.innerText = "Connecting to Google AI Studio...";
+            res.classList.add('hidden');
+            err.classList.add('hidden');
             
             try {
-                const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${k}`, {
+                // モデル名を「gemini-1.5-flash-latest」に変更し、URL形式を2025年最新版に完全適合
+                const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${k}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: document.getElementById('testInput').value }] }] })
+                    body: JSON.stringify({ contents: [{ parts: [{ text: "こんにちは。接続成功おめでとう、と一言だけ言ってください。" }] }] })
                 });
+                
                 const d = await r.json();
                 if(d.error) throw new Error(d.error.message);
+                
                 res.innerText = d.candidates[0].content.parts[0].text;
                 res.classList.remove('hidden');
-                st.innerText = "成功！AIが正常に動いています。";
+                st.innerText = "SUCCESS! 接続に成功しました！";
+                btn.classList.replace('bg-green-500', 'bg-gray-800');
+                btn.innerText = "接続完了";
             } catch (e) {
-                st.innerText = "エラー: " + e.message;
-            } finally { btn.disabled = false; }
+                err.innerText = "エラー: " + e.message;
+                err.classList.remove('hidden');
+                st.innerText = "FAILED";
+                console.error(e);
+            } finally {
+                btn.disabled = false;
+            }
         }
     </script>
 </body>
