@@ -3,185 +3,248 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Note Assistant v66</title>
+    <title>Note Assistant v68</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { theme: { extend: { colors: { note: '#2cb696' } } } }
     </script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f8f8; color: #333; line-height: 1.5; }
-        .card { background: white; border-radius: 12px; margin-bottom: 10px; border: 1px solid #e2e8e8; box-shadow: 0 2px 8px rgba(44, 182, 150, 0.03); overflow: hidden; }
-        .section-title { font-size: 11px; font-weight: 800; color: #718096; padding: 8px 12px; border-bottom: 1px solid #f1f5f5; background: #fafcfc; letter-spacing: 0.05em; }
-        textarea, input { font-size: 14px !important; outline: none; border: 1px solid #edf2f2; border-radius: 6px; }
-        textarea:focus { border-color: #2cb696; }
-        .btn-note { background: #2cb696; color: white; border-radius: 8px; font-weight: 800; transition: 0.2s; font-size: 13px; }
-        .btn-note:active { transform: scale(0.97); opacity: 0.9; }
-        .x-post { border-bottom: 1px solid #f0f5f5; padding: 10px 12px; background: white; font-size: 13px; }
-        .text-micro { font-size: 10px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f8f8; color: #333; line-height: 1.4; }
+        .card { background: white; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e2e8e8; overflow: hidden; }
+        .section-title { font-size: 10px; font-weight: 800; color: #718096; padding: 6px 10px; border-bottom: 1px solid #f1f5f5; background: #fafcfc; letter-spacing: 0.05em; display: flex; justify-content: space-between; align-items: center; }
+        textarea, input, select { font-size: 13px !important; outline: none; border: 1px solid #edf2f2; border-radius: 4px; }
+        .btn-note { background: #2cb696; color: white; border-radius: 6px; font-weight: 800; transition: 0.1s; font-size: 11px; }
+        .btn-note:active { opacity: 0.8; transform: scale(0.98); }
+        .list-item { border-bottom: 1px solid #f0f5f5; padding: 8px 10px; background: white; font-size: 12px; }
+        .text-micro { font-size: 9px; }
+        .tab-btn { font-size: 10px; font-weight: 800; padding: 8px 4px; color: #a0aec0; border-bottom: 2px solid transparent; flex: 1; text-align: center; }
+        .tab-btn.active { color: #2cb696; border-bottom-color: #2cb696; }
+        /* チャット吹き出し用 */
+        .chat-msg { font-size: 12px; padding: 8px 12px; border-radius: 12px; margin-bottom: 8px; max-width: 90%; }
+        .msg-ai { background: #f0f7f6; color: #2d3748; border: 1px solid #d1e7e4; align-self: flex-start; }
+        .msg-user { background: #2cb696; color: white; align-self: flex-end; margin-left: auto; }
     </style>
 </head>
 <body class="p-2">
 
     <header class="flex justify-between items-center mb-2 px-1">
-        <h1 class="font-black text-note text-base italic tracking-tighter uppercase">Note Assistant <span class="text-gray-300 text-[8px] not-italic">v66</span></h1>
-        <div id="statusBadge" class="text-[9px] font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-400 italic">STANDBY</div>
+        <h1 class="font-black text-note text-sm italic tracking-tighter uppercase">Note Assistant <span class="text-gray-300 text-[8px] not-italic">v68</span></h1>
+        <div id="statusBadge" class="text-[8px] font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-400 italic uppercase">Standby</div>
     </header>
 
-    <div class="card border-dashed border-note/30">
-        <div class="section-title">API CONFIGURATION</div>
-        <div class="p-3 pt-1">
-            <input type="password" id="apiKeyInput" placeholder="API KEY" class="w-full p-2 text-xs border rounded-lg bg-gray-50/50 mb-2">
-            <div class="flex gap-2">
-                <button onclick="saveApiKey()" class="flex-1 bg-gray-800 text-white py-1.5 rounded-lg font-bold text-micro uppercase">Save Key</button>
-                <button onclick="checkModels()" class="flex-1 border border-gray-300 text-gray-600 py-1.5 rounded-lg font-bold text-micro uppercase">Diagnose</button>
+    <div class="flex border-b border-gray-200 mb-2">
+        <button onclick="switchTab('editor')" id="tab-editor" class="tab-btn active">EDITOR</button>
+        <button onclick="switchTab('profiles')" id="tab-profiles" class="tab-btn">PROFILES</button>
+        <button onclick="switchTab('library')" id="tab-library" class="tab-btn">LIBRARY</button>
+        <button onclick="switchTab('timeline')" id="tab-timeline" class="tab-btn">MEMO</button>
+    </div>
+
+    <div id="panel-editor">
+        <div class="card">
+            <div class="section-title">
+                <span>TARGET PROFILE</span>
+                <select id="activeProfileSelect" onchange="changeActiveProfile()" class="p-1 text-[10px] bg-white border-none font-bold text-note">
+                    <option value="">Select Profile</option>
+                </select>
+            </div>
+            <textarea id="mainContent" rows="6" placeholder="内容を入力してください" class="w-full p-3 border-none resize-none leading-relaxed"></textarea>
+            <div class="p-3 pt-0">
+                <button onclick="generate()" id="btn-gen" class="w-full bg-gray-900 text-white py-3 rounded-lg font-black text-sm shadow-lg active:scale-95 uppercase tracking-widest">
+                    Generate Draft
+                </button>
+            </div>
+        </div>
+
+        <div id="resultContainer" class="hidden flex flex-col gap-2 mb-4">
+            <div class="flex items-center gap-2 px-1 font-bold text-gray-400 text-micro uppercase tracking-widest">Discussion / Refinement</div>
+            <div id="chatHistory" class="flex flex-col">
+                </div>
+            
+            <div class="card p-2 border-note/30 bg-note/5">
+                <div class="flex gap-2">
+                    <input type="text" id="refineInput" placeholder="修正指示を送信（例：もっと具体的に、短くして等）" class="flex-1 p-2 text-xs border rounded-lg">
+                    <button onclick="refine()" class="bg-note text-white px-4 py-2 rounded-lg font-black text-[10px] uppercase">Send</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="card">
-        <div class="section-title">STYLE PROFILE</div>
-        <div class="p-3 pt-1">
-            <textarea id="personalInfo" rows="2" placeholder="お手本となる文章を入力してください" class="w-full p-2 text-xs border bg-gray-50/30 mb-2"></textarea>
-            <button onclick="saveProfile()" class="w-full btn-note py-2 shadow-sm uppercase">Update Profile</button>
+    <div id="panel-profiles" class="hidden">
+        <div class="card p-3">
+            <input type="text" id="profileName" placeholder="人名・カテゴリ名" class="w-full p-2 mb-2 text-xs">
+            <textarea id="profileText" rows="4" placeholder="お手本の文章を貼り付けてください" class="w-full p-2 mb-2 text-xs"></textarea>
+            <button onclick="addProfile()" class="w-full btn-note py-2 uppercase">Add New Profile</button>
+        </div>
+        <div id="profileList"></div>
+    </div>
+
+    <div id="panel-library" class="hidden">
+        <div class="card p-3">
+            <textarea id="libInput" rows="3" placeholder="好きな記事やフレーズをストック..." class="w-full p-2 mb-2 text-xs"></textarea>
+            <button onclick="addToLibrary()" class="w-full btn-note py-2 uppercase">Add to Library</button>
+        </div>
+        <div id="libraryList"></div>
+    </div>
+
+    <div id="panel-timeline" class="hidden">
+        <div class="card p-3">
+            <textarea id="tweetInput" rows="2" placeholder="ネタをメモ..." class="w-full p-2 mb-2 text-xs"></textarea>
+            <button onclick="postTweet()" class="w-full bg-[#1d9bf0] text-white py-2 rounded-lg font-bold text-xs w-full uppercase">Save Memo</button>
+        </div>
+        <div id="timelineList"></div>
+    </div>
+
+    <div class="mt-4 p-2 border-t border-gray-200">
+        <div class="flex gap-2 items-center">
+            <input type="password" id="apiKeyInput" placeholder="API KEY" class="flex-1 p-1.5 text-[10px] bg-white">
+            <button onclick="saveApiKey()" class="bg-gray-800 text-white px-3 py-1.5 rounded font-bold text-micro uppercase">Save</button>
+            <button onclick="checkModels()" class="border border-gray-300 text-gray-600 px-3 py-1.5 rounded font-bold text-micro uppercase">Diag</button>
         </div>
     </div>
-
-    <div class="card">
-        <div class="bg-note/5 text-[9px] font-black text-note px-3 py-1.5 border-b border-note/10 uppercase text-center italic tracking-widest">Main Editor</div>
-        <textarea id="mainContent" rows="6" placeholder="内容を入力してください" class="w-full p-3 text-sm border-none resize-none leading-relaxed"></textarea>
-        <div class="p-3 pt-0">
-            <button onclick="generate()" id="btn-gen" class="w-full bg-gray-900 text-white py-4 rounded-xl font-black text-base shadow-lg active:scale-95 transition-all uppercase tracking-tight">
-                Generate Draft
-            </button>
-        </div>
-    </div>
-
-    <div id="loading" class="hidden text-center py-4 font-bold text-note animate-pulse italic text-xs uppercase">Processing...</div>
-    
-    <div id="resultContainer" class="hidden card border-2 border-note p-4 mb-4">
-        <div class="text-[10px] font-black text-note mb-2 border-b border-note/20 pb-1 uppercase italic">AI Response</div>
-        <div id="resultBody" class="text-sm leading-relaxed whitespace-pre-wrap text-gray-800"></div>
-    </div>
-
-    <div class="flex items-center gap-2 mb-1 px-1 font-bold text-gray-400 text-micro uppercase tracking-widest">Timeline</div>
-    <div id="timeline" class="card min-h-[100px]"></div>
 
     <script>
-        const DB_NAME = 'NOTE_PRO_V66_DATA';
-        let store = JSON.parse(localStorage.getItem(DB_NAME)) || { tweets: [], userInfo: "", apiKey: "", activeModel: "" };
+        const DB = 'NOTE_PRO_V68_FINAL';
+        let store = JSON.parse(localStorage.getItem(DB)) || { 
+            tweets: [], profiles: [], library: [], apiKey: "", activeModel: "", activeProfileId: null 
+        };
+        
+        let chatContext = []; // 対話履歴保持用
 
-        function saveApiKey() {
-            const key = document.getElementById('apiKeyInput').value.trim();
-            if(!key) return;
-            store.apiKey = key;
-            save();
-            alert("KEY SAVED");
+        function save() { localStorage.setItem(DB, JSON.stringify(store)); renderAll(); }
+
+        function switchTab(tab) {
+            ['editor', 'profiles', 'library', 'timeline'].forEach(t => {
+                document.getElementById('panel-' + t).classList.add('hidden');
+                document.getElementById('tab-' + t).classList.remove('active');
+            });
+            document.getElementById('panel-' + tab).classList.remove('hidden');
+            document.getElementById('tab-' + tab).classList.add('active');
         }
 
-        async function checkModels() {
-            if(!store.apiKey) return alert("ENTER KEY FIRST");
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${store.apiKey}`);
-                const data = await res.json();
-                if(data.error) throw new Error(data.error.message);
-                
-                const available = data.models
-                    .filter(m => m.supportedGenerationMethods.includes('generateContent'))
-                    .map(m => m.name.replace('models/', ''));
-                
-                // 2.5シリーズを最優先、なければ1.5
-                store.activeModel = available.find(m => m.includes('2.5-flash')) || available.find(m => m.includes('1.5-flash')) || available[0];
-                save();
-                alert("SUCCESS: " + store.activeModel);
-                document.getElementById('statusBadge').innerText = "READY: " + store.activeModel;
-                document.getElementById('statusBadge').className = "text-[9px] font-bold px-2 py-0.5 rounded bg-green-100 text-green-600 italic";
-            } catch (e) {
-                alert("DIAGNOSE ERROR: " + e.message);
-            }
-        }
-
-        function save() { localStorage.setItem(DB_NAME, JSON.stringify(store)); }
-
-        function saveProfile() {
-            store.userInfo = document.getElementById('personalInfo').value;
-            save();
-            alert('PROFILE UPDATED');
+        // --- 生成・壁打ちロジック ---
+        async function callGemini(contents) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${store.activeModel || 'gemini-1.5-flash'}:generateContent?key=${store.apiKey}`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents })
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error.message);
+            return data.candidates[0].content.parts[0].text;
         }
 
         async function generate() {
-            if(!store.apiKey) return alert("SET API KEY");
+            if(!store.apiKey) return alert('SET API KEY');
             const content = document.getElementById('mainContent').value.trim();
             if(!content) return;
 
-            const loading = document.getElementById('loading');
-            const resultArea = document.getElementById('resultContainer');
-            
-            loading.classList.remove('hidden');
-            resultArea.classList.add('hidden');
+            const profile = store.profiles.find(p => p.id == store.activeProfileId);
+            const styleText = profile ? profile.text : "標準的なトーン";
 
-            const model = store.activeModel || "gemini-1.5-flash";
+            document.getElementById('btn-gen').innerText = "Generating...";
+            document.getElementById('chatHistory').innerHTML = '';
+            chatContext = []; // 履歴リセット
+
+            const firstPrompt = `文体お手本:\n${styleText}\n\n内容:\n${content}\n\n上記からNote構成案（タイトル・見出し・要約）を作成して。`;
+            
+            try {
+                const aiResponse = await callGemini([{ role: "user", parts: [{ text: firstPrompt }] }]);
+                
+                // 履歴に追加
+                chatContext.push({ role: "user", parts: [{ text: firstPrompt }] });
+                chatContext.push({ role: "model", parts: [{ text: aiResponse }] });
+
+                renderChat();
+                document.getElementById('resultContainer').classList.remove('hidden');
+                document.getElementById('resultContainer').scrollIntoView({ behavior: 'smooth' });
+            } catch (e) { alert(e.message); }
+            finally { document.getElementById('btn-gen').innerText = "Generate Draft"; }
+        }
+
+        async function refine() {
+            const input = document.getElementById('refineInput');
+            const text = input.value.trim();
+            if(!text) return;
+
+            input.value = '';
+            chatContext.push({ role: "user", parts: [{ text }] });
+            renderChat();
 
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${store.apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: `お手本:\n${store.userInfo}\n内容:\n${content}\n構成案を作成してください。` }] }] })
-                });
-                const data = await res.json();
-                if (data.error) throw new Error(data.error.message);
-
-                const resultBody = document.getElementById('resultBody');
-                resultBody.innerText = data.candidates[0].content.parts[0].text;
-                
-                // 表示してからスクロール
-                resultArea.classList.remove('hidden');
-                setTimeout(() => {
-                    resultArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 100);
-
-            } catch (e) {
-                alert("ERROR: " + e.message);
-            } finally {
-                loading.classList.add('hidden');
-            }
+                const aiResponse = await callGemini(chatContext);
+                chatContext.push({ role: "model", parts: [{ text: aiResponse }] });
+                renderChat();
+            } catch (e) { alert(e.message); }
         }
 
-        function render() {
-            const tl = document.getElementById('timeline');
-            if (store.tweets.length === 0) {
-                tl.innerHTML = `<div class="p-6 text-center text-gray-300 text-micro font-bold uppercase">No data available</div>`;
-                return;
-            }
-            tl.innerHTML = store.tweets.map(t => `<div class="x-post"><p class="text-gray-700 font-medium">${t.t}</p></div>`).join('');
+        function renderChat() {
+            const history = document.getElementById('chatHistory');
+            // 最初のプロンプト（指示文）は非表示にし、AIの回答とユーザーの追加指示だけ出す
+            history.innerHTML = chatContext.map((msg, i) => {
+                if (i === 0) return ''; // 最初のシステム指示は隠す
+                const isAI = msg.role === "model";
+                return `
+                    <div class="chat-msg ${isAI ? 'msg-ai' : 'msg-user'}">
+                        ${isAI ? `<div class="text-[8px] font-black mb-1 text-note uppercase italic border-b border-note/10 pb-0.5">AI Response</div>` : ''}
+                        <div class="whitespace-pre-wrap">${msg.text || msg.parts[0].text}</div>
+                    </div>
+                `;
+            }).join('');
+            window.scrollTo(0, document.body.scrollHeight);
         }
 
-        // 過去データの自動引き継ぎ
-        (function rescue() {
-            const oldKeys = ['NOTE_PRO_V65_DATA', 'NOTE_PRO_V64_DATA', 'NOTE_PRO_V63_STABLE'];
-            oldKeys.forEach(k => {
-                const old = JSON.parse(localStorage.getItem(k));
-                if (old?.tweets) {
-                    old.tweets.forEach(ot => {
-                        const txt = ot.t || ot.text;
-                        if (txt && !store.tweets.some(st => st.t === txt)) {
-                            store.tweets.push({ t: txt, d: ot.d || new Date().toLocaleString() });
-                        }
-                    });
-                }
-                if (!store.userInfo && old?.userInfo) store.userInfo = old.userInfo;
-                if (!store.apiKey && old?.apiKey) store.apiKey = old.apiKey;
-                if (!store.activeModel && old?.activeModel) store.activeModel = old.activeModel;
-            });
+        // --- 以下、既存の管理機能（v67と同等） ---
+        function addProfile() {
+            const name = document.getElementById('profileName').value.trim();
+            const text = document.getElementById('profileText').value.trim();
+            if(!name || !text) return;
+            store.profiles.unshift({ id: Date.now(), name, text });
+            document.getElementById('profileName').value = ''; document.getElementById('profileText').value = '';
             save();
-        })();
-
-        document.getElementById('apiKeyInput').value = store.apiKey || "";
-        document.getElementById('personalInfo').value = store.userInfo || "";
-        if(store.activeModel) {
-            document.getElementById('statusBadge').innerText = "READY: " + store.activeModel;
-            document.getElementById('statusBadge').className = "text-[9px] font-bold px-2 py-0.5 rounded bg-green-100 text-green-600 italic";
         }
-        render();
+        function deleteProfile(id) { if(confirm('Del?')) { store.profiles = store.profiles.filter(p => p.id !== id); save(); } }
+        function addToLibrary() {
+            const text = document.getElementById('libInput').value.trim();
+            if(!text) return;
+            store.library.unshift({ id: Date.now(), text, date: new Date().toLocaleString() });
+            document.getElementById('libInput').value = ''; save();
+        }
+        function deleteLib(id) { if(confirm('Del?')) { store.library = store.library.filter(p => p.id !== id); save(); } }
+        function postTweet() {
+            const text = document.getElementById('tweetInput').value.trim();
+            if(!text) return;
+            store.tweets.unshift({ id: Date.now(), text, date: new Date().toLocaleString() });
+            document.getElementById('tweetInput').value = ''; save();
+        }
+        function deleteTweet(id) { if(confirm('Del?')) { store.tweets = store.tweets.filter(t => t.id !== id); save(); } }
+        function editTweet(id) {
+            const t = store.tweets.find(x => x.id === id);
+            const n = prompt('Edit:', t.text); if(n) { t.text = n; save(); }
+        }
+        function copyToEditor(t) {
+            const ed = document.getElementById('mainContent'); ed.value += (ed.value ? '\n\n' : '') + t;
+            switchTab('editor'); ed.focus();
+        }
+        function renderAll() {
+            document.getElementById('profileList').innerHTML = store.profiles.map(p => `<div class="list-item flex justify-between"><div><span class="font-bold text-note text-[10px] uppercase">${p.name}</span><p class="line-clamp-1 text-gray-500">${p.text}</p></div><button onclick="deleteProfile(${p.id})" class="text-red-200 text-[10px] font-bold">DEL</button></div>`).join('');
+            document.getElementById('activeProfileSelect').innerHTML = '<option value="">Select Profile</option>' + store.profiles.map(p => `<option value="${p.id}" ${store.activeProfileId == p.id ? 'selected' : ''}>${p.name}</option>`).join('');
+            document.getElementById('libraryList').innerHTML = store.library.map(l => `<div class="list-item"><div class="flex justify-between mb-1"><span class="text-micro text-gray-400">${l.date}</span><div class="flex gap-2"><button onclick="copyToEditor(\`${l.text}\`)" class="text-note text-micro font-bold">ADD</button><button onclick="deleteLib(${l.id})" class="text-red-200 text-micro font-bold">DEL</button></div></div><p>${l.text}</p></div>`).join('');
+            document.getElementById('timelineList').innerHTML = store.tweets.map(t => `<div class="list-item"><div class="flex justify-between mb-1"><span class="text-micro text-gray-400">${t.date}</span><div class="flex gap-2"><button onclick="copyToEditor(\`${t.text}\`)" class="text-note text-micro font-bold">ADD</button><button onclick="editTweet(${t.id})" class="text-gray-400 text-micro font-bold">EDIT</button><button onclick="deleteTweet(${t.id})" class="text-red-200 text-micro font-bold">DEL</button></div></div><p>${t.text}</p></div>`).join('');
+        }
+        function changeActiveProfile() { store.activeProfileId = document.getElementById('activeProfileSelect').value; save(); }
+        function saveApiKey() { store.apiKey = document.getElementById('apiKeyInput').value.trim(); save(); alert('Saved'); }
+        async function checkModels() {
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${store.apiKey}`);
+                const data = await res.json();
+                const available = data.models.map(m => m.name.replace('models/', ''));
+                store.activeModel = available.find(m => m.includes('2.5-flash')) || available.find(m => m.includes('1.5-flash')) || available[0];
+                save(); alert("Model Found: " + store.activeModel);
+            } catch (e) { alert(e.message); }
+        }
+        renderAll();
+        document.getElementById('apiKeyInput').value = store.apiKey || "";
     </script>
 </body>
 </html>
