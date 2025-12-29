@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Note Assistant v60</title>
+    <title>Note Assistant v61</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { theme: { extend: { colors: { note: '#2cb696' } } } }
@@ -22,7 +22,7 @@
 <body class="p-3">
 
     <header class="flex justify-between items-center mb-3 px-1">
-        <h1 class="font-black text-note text-lg italic tracking-tighter">Note Assistant <span class="text-gray-200 text-[8px]">v60</span></h1>
+        <h1 class="font-black text-note text-lg italic tracking-tighter">Note Assistant <span class="text-gray-200 text-[8px]">v61</span></h1>
         <div id="statusBadge" class="text-[9px] font-bold px-2 py-1 rounded bg-gray-100 text-gray-400 italic">Ready</div>
     </header>
 
@@ -36,7 +36,7 @@
 
     <div class="card">
         <div class="bg-note/5 text-[9px] font-black text-note px-4 py-2 border-b border-note/10 uppercase tracking-widest text-center italic">Editor</div>
-        <textarea id="mainContent" rows="8" placeholder="メモからネタを選んで追加するか、直接入力してください" class="w-full p-4 text-base border-none resize-none"></textarea>
+        <textarea id="mainContent" rows="8" placeholder="メモからネタを選んで追加してください" class="w-full p-4 text-base border-none resize-none"></textarea>
         <div class="p-4 pt-0">
             <button onclick="generate()" id="btn-gen" class="w-full bg-gray-900 text-white py-5 rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all">
                 AI構成案を作成
@@ -44,12 +44,8 @@
         </div>
     </div>
 
-    <div id="loading" class="hidden text-center py-6 font-bold text-note animate-pulse italic">Gemini API Calling...</div>
+    <div id="loading" class="hidden text-center py-6 font-bold text-note animate-pulse italic">AI Thinking...</div>
     <div id="resultContainer" class="hidden card p-5 border-2 border-note bg-white mb-6">
-        <div class="flex justify-between items-center mb-3 border-b pb-2">
-            <span class="text-xs font-black text-note italic">AI Result</span>
-            <button onclick="copyResult()" class="text-[10px] bg-gray-100 px-2 py-1 rounded font-bold">Copy</button>
-        </div>
         <div id="resultBody" class="text-base leading-loose whitespace-pre-wrap text-gray-800"></div>
     </div>
 
@@ -63,72 +59,51 @@
     </div>
 
     <script>
-        // 【修正】APIキーを確実に固定し、URLを最新のv1安定版に変更
         const API_KEY = "AIzaSyDW_SSSPmUArMHEthTmKJZiGl1rYypsCXA".trim();
-        const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+        const DB_NAME = 'NOTE_PRO_V61_STABLE';
 
-        // ストレージキー（以前のデータを引き継ぐために過去のキーも走査）
-        const CURRENT_DB = 'NOTE_PRO_V60_STABLE';
-        const OLD_KEYS = ['NOTE_PRO_V59_DATA', 'NOTE_PRO_V58_STABLE', 'NOTE_PRO_V57_FINAL', 'NOTE_PRO_V56_STABLE', 'NOTE_PRO_V55_FINAL'];
+        let store = JSON.parse(localStorage.getItem(DB_NAME)) || { tweets: [], userInfo: "" };
 
-        let store = JSON.parse(localStorage.getItem(CURRENT_DB)) || { tweets: [], userInfo: "" };
-
-        // データ救出ロジックの強化（消えた投稿を戻す）
-        function rescueAllData() {
-            let recovered = false;
-            OLD_KEYS.forEach(k => {
+        // データ復元ロジック
+        function rescue() {
+            const keys = ['NOTE_PRO_V60_STABLE', 'NOTE_PRO_V59_DATA', 'NOTE_PRO_V58_STABLE'];
+            keys.forEach(k => {
                 const old = JSON.parse(localStorage.getItem(k));
-                if (old && old.tweets) {
+                if (old?.tweets) {
                     old.tweets.forEach(ot => {
-                        const txt = ot.t || ot.text;
-                        if (txt && !store.tweets.some(st => st.t === txt)) {
-                            store.tweets.push({ t: txt, d: ot.d || new Date().toLocaleString() });
-                            recovered = true;
+                        if (!store.tweets.some(st => st.t === (ot.t || ot.text))) {
+                            store.tweets.push({ t: ot.t || ot.text, d: ot.d || new Date().toLocaleString() });
                         }
                     });
-                    if (!store.userInfo && old.userInfo) {
-                        store.userInfo = old.userInfo;
-                        recovered = true;
-                    }
                 }
             });
-            if (recovered) {
-                store.tweets.sort((a, b) => new Date(b.d) - new Date(a.d)); // 日付順に並び替え
-                save();
-            }
+            save();
         }
 
-        function save() { localStorage.setItem(CURRENT_DB, JSON.stringify(store)); }
+        function save() { localStorage.setItem(DB_NAME, JSON.stringify(store)); }
 
         function saveProfile() {
             store.userInfo = document.getElementById('personalInfo').value;
             save();
-            alert('文体を保存しました');
+            alert('保存完了');
         }
 
         function postTweet() {
-            const input = document.getElementById('tweetInput');
-            if(!input.value.trim()) return;
-            store.tweets.unshift({ t: input.value.trim(), d: new Date().toLocaleString() });
+            const val = document.getElementById('tweetInput').value.trim();
+            if(!val) return;
+            store.tweets.unshift({ t: val, d: new Date().toLocaleString() });
             save();
-            input.value = '';
+            document.getElementById('tweetInput').value = '';
             render();
         }
 
         function render() {
             const tl = document.getElementById('timeline');
-            if (store.tweets.length === 0) {
-                tl.innerHTML = `<div class="p-8 text-center text-gray-300 text-xs italic font-bold">No data found.</div>`;
-                return;
-            }
             tl.innerHTML = store.tweets.map((t, i) => `
                 <div class="x-post">
                     <div class="flex justify-between items-center mb-1 text-[9px] text-gray-400 font-mono">
                         <span>${t.d}</span>
-                        <div class="flex gap-4">
-                            <button onclick="addText(${i})" class="text-note font-black uppercase">Add</button>
-                            <button onclick="delTweet(${i})" class="text-red-200 font-black uppercase">Del</button>
-                        </div>
+                        <div class="flex gap-4"><button onclick="addText(${i})" class="text-note font-black uppercase">Add</button></div>
                     </div>
                     <p class="text-sm text-gray-700 leading-relaxed font-medium">${t.t}</p>
                 </div>
@@ -141,57 +116,61 @@
             ed.focus();
         }
 
-        function delTweet(i) {
-            if(confirm('削除しますか？')) {
-                store.tweets.splice(i, 1);
-                save();
-                render();
-            }
+        // 【今回の重要修正】モデル名を fallback 付きで試行する関数
+        async function callGemini(prompt, modelName) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${API_KEY}`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+            return res;
         }
 
         async function generate() {
             const content = document.getElementById('mainContent').value.trim();
             if(!content) return alert("内容を入力してください");
 
-            document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('resultContainer').classList.add('hidden');
-            
-            const prompt = `分析用お手本:\n${store.userInfo}\n\n上記を踏まえて、以下の内容からNoteの構成案を作成してください:\n${content}`;
+            const loading = document.getElementById('loading');
+            const resultContainer = document.getElementById('resultContainer');
+            loading.classList.remove('hidden');
+            resultContainer.classList.add('hidden');
+
+            const prompt = `文体お手本:\n${store.userInfo}\n\n内容:\n${content}\n\n上記からNote構成案を作成して。`;
 
             try {
-                const res = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
+                // 第1案：最新のFlashモデル名で試行
+                let response = await callGemini(prompt, "gemini-1.5-flash-latest");
+                
+                // もし「見つからない」エラーなら、第2案：標準的なFlashモデル名で試行
+                if (!response.ok) {
+                    console.log("Retrying with standard name...");
+                    response = await callGemini(prompt, "gemini-1.5-flash");
+                }
 
-                const data = await res.json();
-                
+                // それでもダメなら、第3案：Proモデルで試行
+                if (!response.ok) {
+                    console.log("Retrying with Pro model...");
+                    response = await callGemini(prompt, "gemini-1.5-pro");
+                }
+
+                const data = await response.json();
                 if (data.error) throw new Error(data.error.message);
-                
-                const resultText = data.candidates[0].content.parts[0].text;
-                document.getElementById('resultBody').innerText = resultText;
-                document.getElementById('resultContainer').classList.remove('hidden');
-                document.getElementById('resultContainer').scrollIntoView({ behavior: 'smooth' });
-                document.getElementById('statusBadge').innerText = "Last Success: " + new Date().toLocaleTimeString();
+
+                document.getElementById('resultBody').innerText = data.candidates[0].content.parts[0].text;
+                resultContainer.classList.remove('hidden');
+                resultContainer.scrollIntoView({ behavior: 'smooth' });
+                document.getElementById('statusBadge').innerText = "Success";
                 document.getElementById('statusBadge').className = "text-[9px] font-bold px-2 py-1 rounded bg-green-100 text-green-600 italic";
 
             } catch (e) {
-                alert("APIエラーが発生しました。URL構成を修正したため、再度お試しください。\n" + e.message);
-                document.getElementById('statusBadge').innerText = "API Error";
-                document.getElementById('statusBadge').className = "text-[9px] font-bold px-2 py-1 rounded bg-red-100 text-red-600 italic";
+                alert("最終試行も失敗しました。Google側でモデルが制限されている可能性があります。\nエラー: " + e.message);
             } finally {
-                document.getElementById('loading').classList.add('hidden');
+                loading.classList.add('hidden');
             }
         }
 
-        function copyResult() {
-            navigator.clipboard.writeText(document.getElementById('resultBody').innerText);
-            alert('コピーしました');
-        }
-
-        // 実行
-        rescueAllData();
+        rescue();
         document.getElementById('personalInfo').value = store.userInfo || "";
         render();
     </script>
