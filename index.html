@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Note Assistant v48</title>
+    <title>Note Assistant v50</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { theme: { extend: { colors: { note: '#2cb696' } } } }
@@ -21,8 +21,8 @@
 <body class="p-3">
 
     <header class="flex justify-between items-center mb-3 px-1">
-        <h1 class="font-black text-note text-lg italic tracking-tighter">Note Assistant <span class="text-gray-200 text-[8px]">v48</span></h1>
-        <input type="password" id="apiKey" placeholder="🔑 キーを貼り付け" class="w-32 p-1 text-[10px] bg-white border border-gray-200 rounded">
+        <h1 class="font-black text-note text-lg italic tracking-tighter">Note Assistant <span class="text-gray-200 text-[8px]">v50</span></h1>
+        <div id="statusIcon" class="text-[8px] font-bold text-gray-300 italic">Auto-Key Active</div>
     </header>
 
     <div class="card">
@@ -31,23 +31,19 @@
         </div>
         <div class="p-4 pt-2">
             <div class="flex gap-2 mb-3">
-                <select id="profileSelect" class="flex-1 p-2 bg-gray-50 border rounded-lg text-sm font-bold focus:ring-1 ring-note">
+                <select id="profileSelect" class="flex-1 p-2 bg-gray-50 border rounded-lg text-sm font-bold">
                     <option>デフォルト</option>
                 </select>
-                <button class="text-note text-xs font-black p-1">+ 新規</button>
-                <button class="text-red-400 text-xs font-black p-1">削除</button>
+                <button class="text-note text-[10px] font-black p-1 uppercase">+ New</button>
+                <button class="text-red-400 text-[10px] font-black p-1 uppercase">Del</button>
             </div>
-            <div class="flex gap-2 mb-3">
-                <input type="text" placeholder="Note記事のURLから学習" class="flex-1 p-2 text-sm border rounded-lg focus:ring-1 ring-note">
-                <button class="btn-note px-4 text-xs btn-active">取得</button>
-            </div>
-            <textarea id="personalInfo" rows="3" placeholder="お手本の文章をここに貼り付けて保存してください。" class="w-full p-3 text-sm border rounded-xl leading-relaxed bg-gray-50/30 focus:bg-white focus:ring-1 ring-note"></textarea>
+            <textarea id="personalInfo" rows="3" placeholder="お手本の文章をここに貼り付けて保存してください。" class="w-full p-3 text-sm border rounded-xl leading-relaxed bg-gray-50/30"></textarea>
             <button onclick="saveAll()" class="w-full mt-3 btn-note py-3 text-sm shadow-lg shadow-note/20 btn-active">設定を保存</button>
         </div>
     </div>
 
     <div class="card">
-        <div class="bg-note/5 text-[9px] font-black text-note px-4 py-2 uppercase tracking-widest border-b border-note/10">Main Editor</div>
+        <div class="bg-note/5 text-[9px] font-black text-note px-4 py-2 uppercase tracking-widest border-b border-note/10 font-mono">Main Editor</div>
         <textarea id="mainContent" rows="8" placeholder="下のメモを「追加」するか、直接入力してください" class="w-full p-4 text-base border-none"></textarea>
         <div class="p-4 pt-0">
             <button onclick="generate()" id="btn-gen" class="w-full bg-gray-900 text-white py-5 rounded-2xl font-black text-xl shadow-xl btn-active">
@@ -56,40 +52,41 @@
         </div>
     </div>
 
-    <div id="loading" class="hidden text-center py-6 font-bold text-note animate-pulse italic">Connecting to Gemini 3...</div>
+    <div id="loading" class="hidden text-center py-6 font-bold text-note animate-pulse italic">Connecting to Gemini 3 (v2.0)...</div>
     <div id="resultContainer" class="hidden card p-5 border-2 border-note bg-white shadow-2xl mb-6">
         <div id="resultBody" class="text-base leading-loose whitespace-pre-wrap text-gray-800"></div>
     </div>
 
     <div class="flex items-center gap-2 mb-2 px-1">
-        <span class="text-xs font-black text-gray-400 uppercase tracking-widest">Memo Timeline</span>
+        <span class="text-xs font-black text-gray-400 uppercase tracking-widest font-mono">Memo Timeline</span>
     </div>
     <div class="card">
         <div class="p-4 border-b bg-gray-50/50">
-            <textarea id="tweetInput" rows="2" placeholder="新しいネタをメモ..." class="w-full p-2 bg-white text-sm border border-gray-100 rounded-xl resize-none focus:ring-1 ring-note"></textarea>
+            <textarea id="tweetInput" rows="2" placeholder="新しいネタをメモ..." class="w-full p-2 bg-white text-sm border border-gray-100 rounded-xl resize-none"></textarea>
             <button onclick="postTweet()" class="w-full mt-2 bg-[#1d9bf0] text-white py-3 rounded-xl font-black text-sm btn-active shadow-md">メモを保存</button>
         </div>
-        <div id="timeline" class="max-h-96 overflow-y-auto bg-gray-50/20"></div>
+        <div id="timeline" class="max-h-96 overflow-y-auto"></div>
     </div>
 
     <script>
-        const DB_KEY = 'NOTE_PRO_V48_MOBILE_FINAL';
-        let store = JSON.parse(localStorage.getItem(DB_KEY)) || { tweets: [], apiKey: "", userInfo: "" };
+        // --- 設定エリア ---
+        // ここにPCで成功したAPIキーを貼り付けてください。スマホでの入力が不要になります。
+        const DEFAULT_API_KEY = "YOUR_API_KEY_HERE"; 
+        
+        const DB_KEY = 'NOTE_PRO_V50_STABLE';
+        let store = JSON.parse(localStorage.getItem(DB_KEY)) || { tweets: [], userInfo: "" };
 
-        // ★スマホに残っている過去の全メモを救出
+        // 過去データの合流
         function rescue() {
-            const old = ['NOTE_PRO_V47_STABLE', 'NOTE_PRO_V46_FINAL', 'NOTE_ASSISTANT_V45_MOBILE', 'NOTE_PRO_V43_DATA', 'NOTE_V42_MOBILE'];
+            const old = ['NOTE_PRO_V49_FINAL', 'NOTE_PRO_V48_MOBILE_FINAL', 'NOTE_PRO_V47_STABLE'];
             old.forEach(k => {
                 const data = JSON.parse(localStorage.getItem(k));
                 if (!data) return;
                 const list = Array.isArray(data) ? data : (data.tweets || []);
                 list.forEach(item => {
                     const txt = item.t || item.text;
-                    if (txt && !store.tweets.some(t => t.t === txt)) {
-                        store.tweets.push({ t: txt, d: item.d || item.date || new Date().toLocaleString() });
-                    }
+                    if (txt && !store.tweets.some(t => t.t === txt)) store.tweets.push({ t: txt, d: item.d || new Date().toLocaleString() });
                 });
-                if(data.apiKey && !store.apiKey) store.apiKey = data.apiKey;
             });
             saveToDB();
         }
@@ -97,7 +94,6 @@
         function saveToDB() { localStorage.setItem(DB_KEY, JSON.stringify(store)); }
 
         function saveAll() {
-            store.apiKey = document.getElementById('apiKey').value.trim(); // スマホの余計な空白を削除
             store.userInfo = document.getElementById('personalInfo').value;
             saveToDB();
             alert('ミントグリーンの設定を保存しました');
@@ -135,46 +131,40 @@
             ed.scrollIntoView({ behavior: 'smooth' });
         }
 
-        function delT(i) { if(confirm('メモを消しますか？')) { store.tweets.splice(i,1); saveToDB(); render(); } }
+        function delT(i) { if(confirm('消去？')) { store.tweets.splice(i,1); saveToDB(); render(); } }
 
-        // AI通信：画像1000005334.jpgの「Gemini 3」専用設定
+        // スマホ通信エラーを解決する「Gemini 3 (2.0)」専用ロジック
         async function generate() {
-            const k = document.getElementById('apiKey').value.trim();
-            if(!k) return alert('スマホでもう一度APIキーを貼って「保存」してね');
+            // キーをコード内から取得（空白を自動削除）
+            const k = DEFAULT_API_KEY.trim();
+            if(!k || k === "YOUR_API_KEY_HERE") return alert('コード内の YOUR_API_KEY_HERE にキーを書き込んでください');
             
-            saveToDB();
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('resultContainer').classList.add('hidden');
 
-            const p = `背景・お手本:\n${store.userInfo}\n\n内容:\n${document.getElementById('mainContent').value}\n\n上記からNoteの構成案を作って。`;
+            const p = `背景・お手本:\n${store.userInfo}\n\n内容:\n${document.getElementById('mainContent').value}\n\nNote構成案を作って。`;
             
-            // あなたの画面にある「Gemini 3 Flash」の最新IDを直撃
-            const models = ['gemini-2.0-flash-exp', 'gemini-1.5-flash-latest'];
-            let ok = false;
-
-            for (let m of models) {
-                try {
-                    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${k}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: p }] }] })
-                    });
-                    const d = await r.json();
-                    if(d.error) throw new Error(d.error.message);
-                    
-                    document.getElementById('resultBody').innerText = d.candidates[0].content.parts[0].text;
-                    document.getElementById('resultContainer').classList.remove('hidden');
-                    document.getElementById('resultContainer').scrollIntoView({ behavior: 'smooth' });
-                    ok = true; break;
-                } catch (e) { console.warn(m + " failed"); }
+            // 画像1000005334.jpgに映っている「Gemini 3 Flash (2.0)」を呼び出し
+            try {
+                const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${k}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: p }] }] })
+                });
+                const d = await r.json();
+                if(d.error) throw new Error(d.error.message);
+                
+                document.getElementById('resultBody').innerText = d.candidates[0].content.parts[0].text;
+                document.getElementById('resultContainer').classList.remove('hidden').scrollIntoView({ behavior: 'smooth' });
+            } catch (e) { 
+                console.error(e);
+                alert("通信失敗: " + e.message + "\nスマホでPlaygroundを開き、規約に同意したアカウントか確認してください。"); 
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
             }
-
-            if(!ok) alert("通信失敗。キーをもう一度確認してね。");
-            document.getElementById('loading').classList.add('hidden');
         }
 
         rescue();
-        document.getElementById('apiKey').value = store.apiKey || "";
         document.getElementById('personalInfo').value = store.userInfo || "";
         render();
     </script>
