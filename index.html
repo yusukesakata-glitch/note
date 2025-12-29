@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Note Assistant v64</title>
+    <title>Note Assistant v65</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { theme: { extend: { colors: { note: '#2cb696' } } } }
@@ -21,26 +21,26 @@
 <body class="p-3">
 
     <header class="flex justify-between items-center mb-3 px-1">
-        <h1 class="font-black text-note text-lg italic tracking-tighter">Note Assistant <span class="text-gray-200 text-[8px]">v64</span></h1>
-        <div id="statusBadge" class="text-[9px] font-bold px-2 py-1 rounded bg-gray-100 text-gray-400 italic">Checking Key...</div>
+        <h1 class="font-black text-note text-lg italic tracking-tighter">Note Assistant <span class="text-gray-200 text-[8px]">v65</span></h1>
+        <div id="statusBadge" class="text-[9px] font-bold px-2 py-1 rounded bg-gray-100 text-gray-400 italic">Ready</div>
     </header>
 
-    <div class="card border-2 border-orange-200 mb-4">
-        <div class="section-title bg-orange-50 text-orange-700">🔑 API KEY設定</div>
+    <div class="card border-2 border-gray-200 mb-4">
+        <div class="section-title bg-gray-50 text-gray-700">API KEY SETUP</div>
         <div class="p-4 pt-2">
-            <input type="password" id="apiKeyInput" placeholder="新しいキーを入力" class="w-full p-3 text-sm border rounded-xl bg-white mb-2">
+            <input type="password" id="apiKeyInput" placeholder="APIキーを入力" class="w-full p-3 text-sm border rounded-xl bg-white mb-2">
             <div class="flex gap-2">
-                <button onclick="saveApiKey()" class="flex-1 bg-orange-500 text-white py-2 rounded-lg font-bold text-sm">キーを保存</button>
-                <button onclick="checkModels()" class="flex-1 bg-gray-800 text-white py-2 rounded-lg font-bold text-sm text-[10px]">キーを診断する</button>
+                <button onclick="saveApiKey()" class="flex-1 bg-gray-800 text-white py-2 rounded-lg font-bold text-sm">SAVE KEY</button>
+                <button onclick="checkModels()" class="flex-1 bg-white text-gray-800 border border-gray-300 py-2 rounded-lg font-bold text-[10px]">DIAGNOSE</button>
             </div>
         </div>
     </div>
 
     <div class="card">
-        <div class="section-title">▼ 文体プロフィール</div>
+        <div class="section-title">PROFILE SETTINGS</div>
         <div class="p-4 pt-2">
             <textarea id="personalInfo" rows="3" placeholder="お手本の文章を入力してください。" class="w-full p-3 text-sm border rounded-xl leading-relaxed bg-gray-50/30 mb-3"></textarea>
-            <button onclick="saveProfile()" class="w-full btn-note py-3 text-sm shadow-lg shadow-note/20">文体を保存</button>
+            <button onclick="saveProfile()" class="w-full btn-note py-3 text-sm shadow-lg shadow-note/20">SAVE PROFILE</button>
         </div>
     </div>
 
@@ -48,8 +48,8 @@
         <div class="bg-note/5 text-[9px] font-black text-note px-4 py-2 border-b border-note/10 uppercase text-center italic">Editor</div>
         <textarea id="mainContent" rows="6" placeholder="内容を入力してください" class="w-full p-4 text-base border-none resize-none"></textarea>
         <div class="p-4 pt-0">
-            <button onclick="generate()" id="btn-gen" class="w-full bg-gray-900 text-white py-5 rounded-2xl font-black text-xl shadow-xl active:scale-95">
-                AI構成案を作成
+            <button onclick="generate()" id="btn-gen" class="w-full bg-gray-900 text-white py-5 rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all">
+                GENERATE DRAFT
             </button>
         </div>
     </div>
@@ -63,42 +63,36 @@
     <div id="timeline" class="card"></div>
 
     <script>
-        const DB_NAME = 'NOTE_PRO_V64_DATA';
-        let store = JSON.parse(localStorage.getItem(DB_NAME)) || { tweets: [], userInfo: "", apiKey: "" };
+        const DB_NAME = 'NOTE_PRO_V65_DATA';
+        let store = JSON.parse(localStorage.getItem(DB_NAME)) || { tweets: [], userInfo: "", apiKey: "", activeModel: "" };
 
         function saveApiKey() {
             const key = document.getElementById('apiKeyInput').value.trim();
-            if(!key) return alert("キーを入力してください");
+            if(!key) return;
             store.apiKey = key;
             save();
-            updateStatus();
-            alert("保存しました。一度「キーを診断する」を押してください。");
-        }
-
-        function updateStatus() {
-            const badge = document.getElementById('statusBadge');
-            if(store.apiKey) {
-                badge.innerText = "Key Registered";
-                badge.className = "text-[9px] font-bold px-2 py-1 rounded bg-green-100 text-green-600 italic";
-                document.getElementById('apiKeyInput').value = store.apiKey;
-            }
+            alert("APIキーを保存しました。");
         }
 
         async function checkModels() {
-            if(!store.apiKey) return alert("キーを先に入力してください");
-            const btn = document.getElementById('btn-gen');
-            btn.innerText = "診断中...";
+            if(!store.apiKey) return alert("キーを入力してください");
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${store.apiKey}`);
                 const data = await res.json();
                 if(data.error) throw new Error(data.error.message);
                 
-                const modelNames = data.models.map(m => m.name.replace('models/', ''));
-                alert("診断成功！\n使用可能なモデルが見つかりました:\n" + modelNames.slice(0, 3).join('\n') + "\n\nこれで「AI構成案を作成」が動くようになります。");
-                btn.innerText = "AI構成案を作成";
+                // 「generateContent」ができるモデルを自動抽出
+                const availableModels = data.models
+                    .filter(m => m.supportedGenerationMethods.includes('generateContent'))
+                    .map(m => m.name.replace('models/', ''));
+                
+                // Flashモデルを優先的に選択
+                store.activeModel = availableModels.find(m => m.includes('flash')) || availableModels[0];
+                save();
+                
+                alert("診断完了\n使用モデル: " + store.activeModel);
             } catch (e) {
-                alert("診断失敗: " + e.message + "\n\nキーが「Google AI Studio」で正しく作成されているか確認してください。");
-                btn.innerText = "AI構成案を作成";
+                alert("診断エラー: " + e.message);
             }
         }
 
@@ -107,50 +101,70 @@
         function saveProfile() {
             store.userInfo = document.getElementById('personalInfo').value;
             save();
-            alert('保存しました');
+            alert('保存完了');
         }
 
         async function generate() {
             if(!store.apiKey) return alert("APIキーを設定してください");
+            
+            // モデルが未設定なら診断を促す
+            if(!store.activeModel) {
+                await checkModels();
+                if(!store.activeModel) return;
+            }
+
             const content = document.getElementById('mainContent').value.trim();
-            if(!content) return alert("内容を入力してください");
+            if(!content) return;
 
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('resultContainer').classList.add('hidden');
 
-            // 使えるモデルを順に試す
-            const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-1.0-pro"];
-            let success = false;
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${store.activeModel}:generateContent?key=${store.apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: `お手本:\n${store.userInfo}\n内容:\n${content}\n構成案を作って。` }] }] })
+                });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error.message);
 
-            for (const model of modelsToTry) {
-                try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${store.apiKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: `お手本:\n${store.userInfo}\n内容:\n${content}\n構成案を作って。` }] }] })
-                    });
-                    const data = await res.json();
-                    if (data.candidates) {
-                        document.getElementById('resultBody').innerText = data.candidates[0].content.parts[0].text;
-                        resultContainer.classList.remove('hidden').scrollIntoView({ behavior: 'smooth' });
-                        success = true;
-                        break;
-                    }
-                } catch (e) { console.log(`${model} failed, trying next...`); }
+                document.getElementById('resultBody').innerText = data.candidates[0].content.parts[0].text;
+                document.getElementById('resultContainer').classList.remove('hidden').scrollIntoView({ behavior: 'smooth' });
+            } catch (e) {
+                alert("実行エラー: " + e.message);
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
             }
-
-            if(!success) alert("すべてのモデルで試行しましたが失敗しました。キーの権限設定を確認してください。");
-            document.getElementById('loading').classList.add('hidden');
         }
 
         function render() {
             const tl = document.getElementById('timeline');
-            tl.innerHTML = store.tweets.map(t => `
-                <div class="x-post"><p class="text-sm text-gray-700">${t.t}</p></div>
-            `).join('');
+            if (store.tweets.length === 0) {
+                tl.innerHTML = `<div class="p-8 text-center text-gray-300 text-xs italic">No data</div>`;
+                return;
+            }
+            tl.innerHTML = store.tweets.map(t => `<div class="x-post"><p class="text-sm text-gray-700">${t.t}</p></div>`).join('');
         }
 
-        updateStatus();
+        // 過去データの引き継ぎ
+        (function rescue() {
+            const keys = ['NOTE_PRO_V64_DATA', 'NOTE_PRO_V63_STABLE', 'NOTE_PRO_V62_STABLE'];
+            keys.forEach(k => {
+                const old = JSON.parse(localStorage.getItem(k));
+                if (old?.tweets) {
+                    old.tweets.forEach(ot => {
+                        if (!store.tweets.some(st => st.t === (ot.t || ot.text))) {
+                            store.tweets.push({ t: ot.t || ot.text, d: ot.d || new Date().toLocaleString() });
+                        }
+                    });
+                }
+                if (!store.userInfo && old?.userInfo) store.userInfo = old.userInfo;
+                if (!store.apiKey && old?.apiKey) store.apiKey = old.apiKey;
+            });
+            save();
+        })();
+
+        document.getElementById('apiKeyInput').value = store.apiKey || "";
         document.getElementById('personalInfo').value = store.userInfo || "";
         render();
     </script>
