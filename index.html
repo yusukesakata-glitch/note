@@ -3,75 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Note Assistant v87</title>
+    <title>Note Assistant v88</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { theme: { extend: { colors: { note: '#2cb696' } } } }
     </script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f8f8; color: #333; line-height: 1.35; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f8f8; color: #333; line-height: 1.4; }
         .card { background: white; border-radius: 8px; margin-bottom: 6px; border: 1px solid #e2e8e8; overflow: hidden; }
-        .section-title { font-size: 9px; font-weight: 800; color: #718096; padding: 4px 10px; border-bottom: 1px solid #f1f5f5; background: #fafcfc; letter-spacing: 0.05em; display: flex; justify-content: space-between; align-items: center; }
+        .section-title { font-size: 10px; font-weight: 800; color: #718096; padding: 6px 10px; border-bottom: 1px solid #f1f5f5; background: #fafcfc; letter-spacing: 0.05em; display: flex; justify-content: space-between; align-items: center; }
         textarea, input, select { font-size: 12px !important; outline: none; border: 1px solid #edf2f2; border-radius: 4px; }
-        .btn-note { background: #2cb696; color: white; border-radius: 6px; font-weight: 800; transition: 0.1s; font-size: 11px; }
-        .btn-note:active:not(:disabled) { opacity: 0.8; transform: scale(0.98); }
-        .tab-btn { font-size: 9px; font-weight: 800; padding: 10px 1px; color: #a0aec0; border-bottom: 2px solid transparent; flex: 1; text-align: center; white-space: nowrap; }
+        .btn-note { background: #2cb696; color: white; border-radius: 6px; font-weight: 800; font-size: 11px; transition: 0.1s; }
+        .btn-note:active { opacity: 0.8; }
+        .tab-btn { font-size: 9px; font-weight: 800; padding: 12px 2px; color: #a0aec0; border-bottom: 2px solid transparent; flex: 1; text-align: center; white-space: nowrap; }
         .tab-btn.active { color: #2cb696; border-bottom-color: #2cb696; }
-        .chat-msg { font-size: 12px; padding: 8px 12px; border-radius: 12px; margin-bottom: 8px; max-width: 95%; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        .list-item { border-bottom: 1px solid #f0f5f5; padding: 8px 10px; background: white; font-size: 12px; }
+        .chat-msg { font-size: 12px; padding: 8px 12px; border-radius: 12px; margin-bottom: 8px; max-width: 95%; }
         .msg-ai { background: #f0f7f6; border: 1px solid #d1e7e4; align-self: flex-start; }
         .msg-user { background: #2cb696; color: white; align-self: flex-end; margin-left: auto; }
-        .list-item { border-bottom: 1px solid #f0f5f5; padding: 6px 10px; background: white; font-size: 12px; }
-        .btn-danger { color: #feb2b2; font-size: 9px; font-weight: bold; }
-        .btn-tool { background: white; border: 1px solid #2cb696; color: #2cb696; font-size: 9px; font-weight: 800; padding: 4px 8px; border-radius: 4px; }
-        .x-avatar { width: 34px; height: 34px; border-radius: 50%; background: #e2e8f0; flex-shrink: 0; }
+        .text-micro { font-size: 9px; }
     </style>
 </head>
-<body class="p-2 text-[12px]">
+<body class="p-2">
 
     <header class="flex justify-between items-center mb-1 px-1">
-        <h1 class="font-black text-note text-sm italic tracking-tighter uppercase">Note Assistant <span class="text-gray-300 text-[8px] not-italic">v87</span></h1>
-        <div id="statusLabel" class="text-[8px] font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-400 italic uppercase">READY</div>
+        <h1 class="font-black text-note text-sm italic tracking-tighter uppercase">Note Assistant <span class="text-gray-300 text-[8px] not-italic">v88</span></h1>
+        <div id="statusLabel" class="text-[8px] font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-400 italic uppercase">Syncing</div>
     </header>
 
     <div class="flex border-b border-gray-200 mb-2">
         <button onclick="switchTab('projects')" id="tab-projects" class="tab-btn active">記事作成</button>
-        <button onclick="switchTab('styles')" id="tab-styles" class="tab-btn">文体/デザイン</button>
+        <button onclick="switchTab('styles')" id="tab-styles" class="tab-btn">文体保存</button>
         <button onclick="switchTab('library')" id="tab-library" class="tab-btn">ストック</button>
         <button onclick="switchTab('memo')" id="tab-memo" class="tab-btn">タイムライン</button>
-        <button onclick="switchTab('plan')" id="tab-plan" class="tab-btn">伴走/設定</button>
+        <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn">設定</button>
     </div>
 
     <div id="panel-projects">
-        <div class="card p-3 mb-2 bg-note/5 border-note/20">
-            <div class="flex gap-2">
-                <input type="text" id="newDraftTitle" placeholder="新しい記事のタイトル" class="flex-1 p-2 border">
-                <button onclick="safeCreateProject()" class="btn-note px-4 py-2 uppercase">作成</button>
-            </div>
-        </div>
-        <div id="projectGrid" class="grid grid-cols-1 gap-1"></div>
-
-        <div id="activeEditorArea" class="hidden fixed inset-0 bg-[#f4f8f8] z-50 p-2 overflow-y-auto">
-            <div class="flex justify-between items-center mb-2 px-1">
-                <button onclick="exitProject()" class="text-note font-bold uppercase text-[10px]">← 戻る</button>
-                <div class="flex gap-2 items-center">
-                    <button onclick="showDesignHint()" id="designHintBtn" class="hidden text-[8px] font-bold text-note border border-note px-1.5 py-0.5 rounded">デザインヒント</button>
-                    <button onclick="clearChatHistory()" class="text-[8px] font-bold text-red-300 border border-red-100 px-1.5 py-0.5 rounded">履歴消去</button>
-                    <select id="activeProfileSelect" onchange="changeActiveProfile()" class="p-1 text-[9px] bg-white border font-bold text-note">
-                        <option value="">文体を選択</option>
-                    </select>
+        <div id="projectListArea">
+            <div class="card p-3 mb-2 bg-note/5">
+                <div class="flex gap-2">
+                    <input type="text" id="newDraftInput" placeholder="記事のタイトル" class="flex-1 p-2 text-xs border">
+                    <button onclick="createProject()" class="btn-note px-4 py-2 uppercase">作成</button>
                 </div>
             </div>
-            <div id="chatHistory" class="flex flex-col mb-4 min-h-[100px]"></div>
-            <div id="chatTyping" class="hidden text-[10px] text-note animate-pulse mb-4 ml-2 italic text-center">AI思考中...</div>
-            <div class="flex gap-1 mb-2 overflow-x-auto p-1 bg-gray-50 rounded-lg">
-                <button onclick="generateTools('title')" class="btn-tool flex-shrink-0">タイトル案</button>
-                <button onclick="generateTools('intro')" class="btn-tool flex-shrink-0">導入文生成</button>
-                <button onclick="generateTools('photo')" class="btn-tool flex-shrink-0">写真ディレクション</button>
+            <div id="projectGrid"></div>
+        </div>
+        
+        <div id="activeEditorArea" class="hidden">
+            <div class="flex justify-between items-center mb-2">
+                <button onclick="backToList()" class="text-note font-bold text-micro">← 一覧に戻る</button>
+                <select id="activeProfileSelect" onchange="changeActiveProfile()" class="p-1 text-[10px] bg-white border font-bold text-note">
+                    <option value="">文体を選択</option>
+                </select>
             </div>
-            <div class="card p-2 bg-white sticky bottom-2 shadow-xl border-note/20 mt-4">
+            <div id="chatHistory" class="flex flex-col mb-4"></div>
+            <div id="typingLabel" class="hidden text-center text-note text-micro animate-pulse mb-2 italic">AI thinking...</div>
+            <div class="card p-2 sticky bottom-2 shadow-lg border-note/20">
                 <div class="flex gap-2">
-                    <textarea id="refineInput" rows="2" placeholder="AIへの指示" class="flex-1 p-2 text-xs border rounded-lg resize-none"></textarea>
-                    <button onclick="refine()" id="sendBtn" class="bg-gray-900 text-white px-4 rounded-lg font-black text-[10px] uppercase">送信</button>
+                    <textarea id="refineInput" rows="2" placeholder="AIへの指示" class="flex-1 p-2 text-xs border resize-none"></textarea>
+                    <button onclick="sendRefine()" id="sendBtn" class="bg-gray-900 text-white px-4 rounded-lg font-black text-micro uppercase">送信</button>
                 </div>
             </div>
         </div>
@@ -79,83 +70,66 @@
 
     <div id="panel-styles" class="hidden">
         <div class="card p-3">
-            <div class="section-title mb-2">文体・デザインのお手本</div>
-            <input type="hidden" id="editingProfileId">
-            <input type="text" id="profileName" placeholder="名前（例：田中さん風）" class="w-full p-2 mb-2 border">
-            <textarea id="profileText" rows="4" placeholder="【文体】お手本の文章" class="w-full p-2 mb-2 border"></textarea>
-            <textarea id="profileDesign" rows="3" placeholder="【デザイン/写真】方向性のメモ" class="w-full p-2 mb-2 border bg-gray-50/50"></textarea>
-            <div class="flex gap-2">
-                <button onclick="addProfile()" id="profileAddBtn" class="flex-1 btn-note py-2">保存する</button>
-                <button onclick="cancelProfileEdit()" id="profileCancelBtn" class="hidden flex-1 border py-2 text-gray-400 font-bold uppercase">Cancel</button>
-            </div>
+            <div class="section-title mb-2">文体の登録・編集</div>
+            <input type="hidden" id="editingId">
+            <input type="text" id="styleName" placeholder="名前" class="w-full p-2 mb-2 border text-xs">
+            <textarea id="styleText" rows="5" placeholder="お手本の文章" class="w-full p-2 mb-2 border text-xs"></textarea>
+            <button onclick="addStyle()" id="styleBtn" class="w-full btn-note py-2">保存</button>
         </div>
-        <div id="profileList"></div>
+        <div id="styleList"></div>
     </div>
 
     <div id="panel-library" class="hidden">
         <div class="card p-3">
-            <div class="section-title mb-2">記事ストック</div>
-            <textarea id="libInput" rows="3" placeholder="記事本文などをストック" class="w-full p-2 mb-2 border"></textarea>
-            <div class="flex gap-2">
-                <button onclick="addToLibrary()" class="flex-1 btn-note py-2">追加</button>
-                <button onclick="mergeStockToProject()" class="flex-1 border border-note text-note font-bold py-2 rounded text-[10px]">執筆に割込</button>
-            </div>
+            <div class="section-title mb-2">記事のストック</div>
+            <textarea id="libInput" rows="3" placeholder="後で使いたい情報を貼り付け" class="w-full p-2 mb-2 border text-xs"></textarea>
+            <button onclick="addLib()" class="w-full btn-note py-2">ストックに追加</button>
         </div>
         <div id="libraryList"></div>
     </div>
 
     <div id="panel-memo" class="hidden">
         <div class="card p-3 mb-2">
-            <textarea id="tweetInput" rows="2" placeholder="思考をメモ..." class="w-full p-2 mb-2 text-xs border-none"></textarea>
-            <div class="flex justify-between items-center">
-                <button onclick="combineMemosToDraft()" class="text-note font-bold text-[9px] border border-note/20 px-2 py-1 rounded">メモ合体記事化</button>
-                <button onclick="postTweet()" class="bg-[#1d9bf0] text-white px-5 py-1.5 rounded-full font-black text-xs uppercase">Post</button>
-            </div>
+            <textarea id="tweetInput" rows="2" placeholder="メモを投稿..." class="w-full p-2 mb-2 text-xs border-none"></textarea>
+            <button onclick="addMemo()" class="w-full bg-[#1d9bf0] text-white py-1.5 rounded-full font-black text-xs">POST</button>
         </div>
-        <div id="timeline"></div>
+        <div id="timelineList"></div>
     </div>
 
-    <div id="panel-plan" class="hidden">
-        <div class="card p-3 mb-3">
-            <div class="section-title mb-1">あなたのプロフィール</div>
-            <textarea id="myLongProfile" rows="5" placeholder="経歴や関心事" class="w-full p-2 text-xs border bg-gray-50/30 mb-2"></textarea>
-            <button onclick="saveMyProfile()" class="w-full btn-note py-1.5 font-bold">保存</button>
+    <div id="panel-settings" class="hidden">
+        <div class="card p-3 mb-2">
+            <div class="section-title mb-1">プロフィール</div>
+            <textarea id="myProfileInput" rows="5" placeholder="詳細なプロフィール" class="w-full p-2 text-xs border"></textarea>
+            <button onclick="saveProfile()" class="w-full btn-note py-2 mt-2">プロフィールを保存</button>
         </div>
-        <div class="p-2 border-t">
-            <input type="password" id="apiKeyInput" placeholder="API KEY" class="w-full p-2 text-[10px] border mb-2">
-            <div class="flex gap-2">
-                <button onclick="saveApiKey()" class="flex-1 bg-gray-600 text-white py-1.5 rounded text-[9px] font-bold uppercase">Save Key</button>
-                <button onclick="checkModels()" class="flex-1 border border-gray-300 py-1.5 rounded text-[9px] font-bold uppercase">Diagnosis</button>
-            </div>
-            <select id="modelSelector" onchange="selectModel()" class="w-full mt-2 p-1.5 text-[10px] bg-white font-bold text-gray-600 uppercase"></select>
+        <div class="card p-3">
+            <div class="section-title mb-1">API設定</div>
+            <input type="password" id="apiKeyInput" placeholder="Gemini API KEY" class="w-full p-2 text-xs border mb-2">
+            <button onclick="saveSettings()" class="w-full bg-gray-800 text-white py-2 rounded text-micro font-bold">設定を保存</button>
         </div>
     </div>
 
     <script>
-        const MASTER_KEY = 'NOTE_PRO_MASTER_STORAGE';
-        let store = { memos: [], projects: [], profiles: [], library: [], myLongProfile: "", apiKey: "", activeModel: "gemini-1.5-flash", foundModels: [], activeProfileId: null };
+        const DB = 'NOTE_PRO_MASTER_STORAGE';
+        let store = { memos:[], projects:[], profiles:[], library:[], myLongProfile:"", apiKey:"", activeModel:"gemini-1.5-flash", activeProfileId:null };
 
-        // データの復旧と初期化
-        (function init() {
+        // データの確実な読み込み
+        function init() {
             try {
-                const saved = localStorage.getItem(MASTER_KEY);
-                if (saved) store = { ...store, ...JSON.parse(saved) };
-                // 過去の別キーからも救出
-                const legacyKeys = ['NOTE_PRO_V86_MASTER', 'NOTE_PRO_V85_FINAL'];
-                legacyKeys.forEach(k => {
-                    const old = JSON.parse(localStorage.getItem(k));
-                    if(old && old.projects) {
-                        old.projects.forEach(p => { if(!store.projects.some(x=>x.id===p.id)) store.projects.push(p); });
-                        if(old.apiKey && !store.apiKey) store.apiKey = old.apiKey;
-                    }
-                });
-            } catch (e) { console.error(e); }
-        })();
+                const saved = JSON.parse(localStorage.getItem(DB));
+                if(saved) store = {...store, ...saved};
+                renderAll();
+                document.getElementById('statusLabel').innerText = "READY";
+            } catch(e) { console.error(e); }
+        }
 
-        function save() { localStorage.setItem(MASTER_KEY, JSON.stringify(store)); renderAll(); }
+        function save() {
+            localStorage.setItem(DB, JSON.stringify(store));
+            renderAll();
+        }
 
         function switchTab(t) {
-            ['projects','styles','library','memo','plan'].forEach(p => {
+            ['projects','styles','library','memo','settings'].forEach(p => {
                 document.getElementById('panel-'+p).classList.add('hidden');
                 document.getElementById('tab-'+p).classList.remove('active');
             });
@@ -163,149 +137,120 @@
             document.getElementById('tab-'+t).classList.add('active');
         }
 
-        // --- 記事作成 ---
-        function safeCreateProject() {
-            const input = document.getElementById('newDraftTitle');
-            const title = input.value.trim() || "無題の記事";
-            store.projects.unshift({ id: Date.now(), title, chatHistory: [] });
-            input.value = "";
+        // --- 記事作成機能 ---
+        function createProject() {
+            const val = document.getElementById('newDraftInput').value.trim();
+            if(!val) return;
+            store.projects.unshift({ id: Date.now(), title: val, chatHistory: [] });
+            document.getElementById('newDraftInput').value = "";
             save();
         }
 
         function openProject(id) {
             store.activeProjectId = id;
+            document.getElementById('projectListArea').classList.add('hidden');
             document.getElementById('activeEditorArea').classList.remove('hidden');
             renderChat();
         }
 
-        function exitProject() {
+        function backToList() {
             store.activeProjectId = null;
+            document.getElementById('projectListArea').classList.remove('hidden');
             document.getElementById('activeEditorArea').classList.add('hidden');
-            renderAll();
         }
 
-        async function refine() {
+        async function sendRefine() {
             const proj = store.projects.find(p => p.id === store.activeProjectId);
             const input = document.getElementById('refineInput');
-            const userText = input.value.trim();
-            if(!userText || !store.apiKey) return;
-            input.value = '';
-            
-            const profile = store.profiles.find(p => p.id == store.activeProfileId);
-            const systemText = proj.chatHistory.length === 0 
-                ? `プロフィール:\n${store.myLongProfile}\n${profile ? '適応文体:\n' + profile.text : ""}\n\n指示: ${userText}`
-                : userText;
+            const text = input.value.trim();
+            if(!text || !store.apiKey) return;
 
-            proj.chatHistory.push({ role: "user", parts: [{ text: systemText }] });
+            input.value = "";
+            const profile = store.profiles.find(p => p.id == store.activeProfileId);
+            const system = proj.chatHistory.length === 0 
+                ? `プロフィール:\n${store.myLongProfile}\n${profile ? '適応文体:\n' + profile.text : ""}\n\n指示: ${text}`
+                : text;
+
+            proj.chatHistory.push({ role: "user", parts: [{ text: system }] });
             renderChat();
 
             document.getElementById('sendBtn').disabled = true;
-            document.getElementById('chatTyping').classList.remove('hidden');
+            document.getElementById('typingLabel').classList.remove('hidden');
 
             try {
-                const model = store.activeModel || "gemini-1.5-flash";
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${store.apiKey}`;
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${store.activeModel}:generateContent?key=${store.apiKey}`;
                 const res = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: proj.chatHistory }) });
                 const data = await res.json();
                 proj.chatHistory.push({ role: "model", parts: [{ text: data.candidates[0].content.parts[0].text }] });
                 save(); renderChat();
-            } catch (e) { alert(e.message); }
+            } catch(e) { alert(e.message); }
             finally {
                 document.getElementById('sendBtn').disabled = false;
-                document.getElementById('chatTyping').classList.add('hidden');
+                document.getElementById('typingLabel').classList.add('hidden');
             }
-        }
-
-        // --- 文体/デザイン ---
-        function addProfile() {
-            const id = document.getElementById('editingProfileId').value;
-            const name = document.getElementById('profileName').value.trim();
-            const text = document.getElementById('profileText').value.trim();
-            const design = document.getElementById('profileDesign').value.trim();
-            if(!name) return;
-            if(id) {
-                const idx = store.profiles.findIndex(p => p.id == id);
-                store.profiles[idx] = { id: parseInt(id), name, text, design };
-            } else {
-                store.profiles.unshift({ id: Date.now(), name, text, design });
-            }
-            cancelProfileEdit(); save();
-        }
-
-        function editProfile(id) {
-            const p = store.profiles.find(x => x.id === id);
-            document.getElementById('editingProfileId').value = p.id;
-            document.getElementById('profileName').value = p.name;
-            document.getElementById('profileText').value = p.text;
-            document.getElementById('profileDesign').value = p.design || "";
-            document.getElementById('profileAddBtn').innerText = "更新";
-            document.getElementById('profileCancelBtn').classList.remove('hidden');
-            switchTab('styles');
-        }
-
-        function cancelProfileEdit() {
-            document.getElementById('editingProfileId').value = "";
-            document.getElementById('profileName').value = "";
-            document.getElementById('profileText').value = "";
-            document.getElementById('profileDesign').value = "";
-            document.getElementById('profileAddBtn').innerText = "保存する";
-            document.getElementById('profileCancelBtn').classList.add('hidden');
-        }
-
-        // --- 描画 ---
-        function renderAll() {
-            document.getElementById('statusLabel').innerText = store.activeModel || "READY";
-            document.getElementById('designHintBtn').classList.toggle('hidden', !store.activeProfileId);
-            
-            // 記事
-            document.getElementById('projectGrid').innerHTML = store.projects.map(p => `
-                <div class="card p-3 flex justify-between items-center"><div onclick="openProject(${p.id})" class="flex-1 font-black text-xs text-note truncate">${p.title}</div><button onclick="if(confirm('削除?')){store.projects=store.projects.filter(x=>x.id!==${p.id});save();}" class="btn-danger px-2 text-lg">×</button></div>
-            `).join('');
-            
-            // 文体
-            document.getElementById('profileList').innerHTML = store.profiles.map(p => `
-                <div class="list-item flex justify-between items-center"><div><div class="font-bold text-note uppercase text-[10px]">${p.name}</div><div class="text-[9px] text-gray-400">文体＋デザイン</div></div><div class="flex gap-2"><button onclick="editProfile(${p.id})" class="text-note font-bold uppercase">Edit</button><button onclick="if(confirm('削除?')){store.profiles=store.profiles.filter(x=>x.id!==${p.id});save();}" class="btn-danger">Del</button></div></div>
-            `).join('');
-
-            // ストック
-            document.getElementById('libraryList').innerHTML = store.library.map(l => `
-                <div class="list-item flex gap-2"><input type="checkbox" class="lib-check mt-1" data-id="${l.id}"><div class="flex-1"><p class="line-clamp-2 text-gray-700 leading-tight">${l.text}</p><button onclick="if(confirm('削除?')){store.library=store.library.filter(x=>x.id!==${l.id});save();}" class="btn-danger text-[9px]">削除</button></div></div>
-            `).join('');
-
-            // タイムライン
-            document.getElementById('timeline').innerHTML = store.memos.map(m => `
-                <div class="list-item py-2"><div class="flex justify-between text-[9px] text-gray-400 mb-1"><span>@memo · ${new Date(m.id).toLocaleDateString()}</span><button onclick="if(confirm('削除?')){store.memos=store.memos.filter(x=>x.id!==${m.id});save();}" class="btn-danger">削除</button></div><p class="text-[12px] leading-relaxed">${m.text}</p></div>
-            `).join('');
-
-            document.getElementById('activeProfileSelect').innerHTML = '<option value="">文体を選択</option>' + store.profiles.map(p => `<option value="${p.id}" ${store.activeProfileId == p.id ? 'selected' : ''}>${p.name}</option>`).join('');
-            document.getElementById('modelSelector').innerHTML = '<option value="">モデルを選択</option>' + store.foundModels.map(m => `<option value="${m}" ${store.activeModel === m ? 'selected' : ''}>${m}</option>`).join('');
         }
 
         function renderChat() {
             const proj = store.projects.find(p => p.id === store.activeProjectId);
-            const history = document.getElementById('chatHistory');
-            if(proj && history) {
-                history.innerHTML = proj.chatHistory.map(msg => `
-                    <div class="chat-msg ${msg.role === 'model' ? 'msg-ai' : 'msg-user'}"><div class="whitespace-pre-wrap">${msg.parts[0].text.replace(/プロフィール[\s\S]*指示: /, "")}</div></div>
-                `).join('');
-                setTimeout(() => history.lastElementChild?.scrollIntoView({ behavior: 'smooth' }), 50);
-            }
+            const area = document.getElementById('chatHistory');
+            if(!proj || !area) return;
+            area.innerHTML = proj.chatHistory.map(msg => {
+                const isAI = msg.role === 'model';
+                const text = msg.parts[0].text.replace(/プロフィール[\s\S]*指示: /, "");
+                return `<div class="chat-msg ${isAI ? 'msg-ai' : 'msg-user'}"><div class="whitespace-pre-wrap">${text}</div></div>`;
+            }).join('');
+            setTimeout(() => area.lastElementChild?.scrollIntoView({ behavior: 'smooth' }), 50);
         }
 
-        // --- ツール類 ---
-        function postTweet() { const t=document.getElementById('tweetInput'); if(t.value.trim()){ store.memos.unshift({id:Date.now(),text:t.value.trim()}); t.value=''; save(); } }
-        function addToLibrary() { const t=document.getElementById('libInput').value.trim(); if(t){ store.library.unshift({id:Date.now(),text:t}); document.getElementById('libInput').value=''; save(); } }
-        function showDesignHint() { const p=store.profiles.find(x=>x.id==store.activeProfileId); if(p&&p.design) alert(p.design); }
-        function saveApiKey() { store.apiKey=document.getElementById('apiKeyInput').value.trim(); save(); alert("Saved"); }
-        function saveMyProfile() { store.myLongProfile=document.getElementById('myLongProfile').value; save(); alert("Saved"); }
-        function changeActiveProfile() { store.activeProfileId=document.getElementById('activeProfileSelect').value; save(); }
-        function selectModel() { store.activeModel=document.getElementById('modelSelector').value; save(); }
-        async function checkModels() { try { const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${store.apiKey}`); const data=await res.json(); store.foundModels=data.models.filter(m=>m.supportedGenerationMethods.includes('generateContent')).map(m=>m.name.replace('models/','')); save(); alert("Diagnosis Success"); } catch(e){alert(e.message);} }
-        function generateTools(type) {
-            const input = document.getElementById('refineInput');
-            if(type === 'title') input.value = "タイトル案5つとハッシュタグ10個を提案して。";
-            if(type === 'intro') input.value = "魅力的な導入文を200文字で作成して。";
-            if(type === 'photo') input.value = "見出し画像の構図・雰囲気・AIプロンプトを出して。";
-            refine();
+        // --- 各タブの基本機能 ---
+        function addStyle() {
+            const name = document.getElementById('styleName').value.trim();
+            const text = document.getElementById('styleText').value.trim();
+            const id = document.getElementById('editingId').value;
+            if(!name || !text) return;
+            if(id) {
+                const idx = store.profiles.findIndex(p => p.id == id);
+                store.profiles[idx] = { id: parseInt(id), name, text };
+            } else {
+                store.profiles.unshift({ id: Date.now(), name, text });
+            }
+            document.getElementById('styleName').value = ""; document.getElementById('styleText').value = ""; document.getElementById('editingId').value = "";
+            save();
         }
-        function mergeSto
+
+        function editStyle(id) {
+            const p = store.profiles.find(x => x.id === id);
+            document.getElementById('editingId').value = p.id;
+            document.getElementById('styleName').value = p.name;
+            document.getElementById('styleText').value = p.text;
+            switchTab('styles');
+        }
+
+        function addLib() { const val = document.getElementById('libInput').value.trim(); if(val){ store.library.unshift({id:Date.now(), text:val}); document.getElementById('libInput').value=""; save(); } }
+        function addMemo() { const val = document.getElementById('tweetInput').value.trim(); if(val){ store.memos.unshift({id:Date.now(), text:val}); document.getElementById('tweetInput').value=""; save(); } }
+        
+        // --- 全体描画 ---
+        function renderAll() {
+            // プロジェクト
+            document.getElementById('projectGrid').innerHTML = store.projects.map(p => `<div class="card p-3 flex justify-between items-center"><div onclick="openProject(${p.id})" class="flex-1 font-black text-xs text-note truncate">${p.title}</div><button onclick="if(confirm('削除?')){store.projects=store.projects.filter(x=>x.id!==${p.id});save();}" class="text-red-200 px-2 text-lg">×</button></div>`).join('');
+            // 文体
+            document.getElementById('styleList').innerHTML = store.profiles.map(p => `<div class="list-item flex justify-between items-center"><div class="font-bold text-note uppercase text-[10px]">${p.name}</div><div class="flex gap-2"><button onclick="editStyle(${p.id})" class="text-note font-bold uppercase text-micro">Edit</button><button onclick="if(confirm('削除?')){store.profiles=store.profiles.filter(x=>x.id!==${p.id});save();}" class="text-red-200 font-bold uppercase text-micro">Del</button></div></div>`).join('');
+            // ストック
+            document.getElementById('libraryList').innerHTML = store.library.map(l => `<div class="list-item"><p class="line-clamp-2 text-gray-700 leading-tight mb-1">${l.text}</p><button onclick="if(confirm('削除?')){store.library=store.library.filter(x=>x.id!==${l.id});save();}" class="text-red-200 text-micro">削除</button></div>`).join('');
+            // タイムライン
+            document.getElementById('timelineList').innerHTML = store.memos.map(m => `<div class="list-item py-2"><div class="flex justify-between text-[9px] text-gray-400 mb-1"><span>${new Date(m.id).toLocaleDateString()}</span><button onclick="if(confirm('削除?')){store.memos=store.memos.filter(x=>x.id!==${m.id});save();}" class="text-red-200">削除</button></div><p class="text-[12px]">${m.text}</p></div>`).join('');
+            
+            document.getElementById('activeProfileSelect').innerHTML = '<option value="">文体を選択</option>' + store.profiles.map(p => `<option value="${p.id}" ${store.activeProfileId == p.id ? 'selected' : ''}>${p.name}</option>`).join('');
+            document.getElementById('apiKeyInput').value = store.apiKey || "";
+            document.getElementById('myProfileInput').value = store.myLongProfile || "";
+        }
+
+        // --- 設定保存 ---
+        function saveSettings() { store.apiKey = document.getElementById('apiKeyInput').value.trim(); save(); alert("設定を保存しました"); }
+        function saveProfile() { store.myLongProfile = document.getElementById('myProfileInput').value; save(); alert("プロフィールを保存しました"); }
+        function changeActiveProfile() { store.activeProfileId = document.getElementById('activeProfileSelect').value; save(); }
+
+        init();
+    </script>
+</body>
+</html>
