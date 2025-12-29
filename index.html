@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Note Assistant v84</title>
+    <title>Note Assistant v85</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { theme: { extend: { colors: { note: '#2cb696' } } } }
@@ -25,15 +25,14 @@
         .list-item { border-bottom: 1px solid #f0f5f5; padding: 8px 10px; background: white; font-size: 12px; }
         .btn-danger { color: #feb2b2; font-size: 9px; font-weight: bold; padding: 2px 4px; border: 1px solid transparent; }
         .btn-edit { color: #718096; font-size: 9px; font-weight: bold; padding: 2px 4px; border: 1px solid #edf2f2; border-radius: 4px; }
-        .btn-tool { background: white; border: 1px solid #note; color: #note; font-size: 9px; font-weight: 800; padding: 4px 8px; border-radius: 4px; }
-        .x-card { border-bottom: 1px solid #eff3f4; padding: 10px; background: white; position: relative; }
+        .btn-tool { background: white; border: 1px solid #2cb696; color: #2cb696; font-size: 9px; font-weight: 800; padding: 4px 8px; border-radius: 4px; }
         .x-avatar { width: 34px; height: 34px; border-radius: 50%; background: #e2e8f0; flex-shrink: 0; }
     </style>
 </head>
 <body class="p-2 text-[12px]">
 
     <header class="flex justify-between items-center mb-1 px-1">
-        <h1 class="font-black text-note text-sm italic tracking-tighter uppercase">Note Assistant <span class="text-gray-300 text-[8px] not-italic">v84</span></h1>
+        <h1 class="font-black text-note text-sm italic tracking-tighter uppercase">Note Assistant <span class="text-gray-300 text-[8px] not-italic">v85</span></h1>
         <div id="statusLabel" class="text-[8px] font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-400 italic uppercase">READY</div>
     </header>
 
@@ -81,11 +80,11 @@
 
     <div id="panel-styles" class="hidden">
         <div class="card p-3">
-            <div class="section-title mb-2">文体・デザインのお手本</div>
+            <div class="section-title mb-2">文体・デザインお手本</div>
             <input type="hidden" id="editingProfileId">
-            <input type="text" id="profileName" placeholder="名前（例：田中さん風）" class="w-full p-2 mb-2 border">
+            <input type="text" id="profileName" placeholder="名前" class="w-full p-2 mb-2 border">
             <textarea id="profileText" rows="4" placeholder="【文体】お手本の文章" class="w-full p-2 mb-2 border"></textarea>
-            <textarea id="profileDesign" rows="3" placeholder="【デザイン/写真】方向性のメモ（例：モノクロ写真、余白多め）" class="w-full p-2 mb-2 border bg-gray-50/50"></textarea>
+            <textarea id="profileDesign" rows="3" placeholder="【デザイン/写真】メモ" class="w-full p-2 mb-2 border bg-gray-50/50"></textarea>
             <div class="flex gap-2">
                 <button onclick="addProfile()" id="profileAddBtn" class="flex-1 btn-note py-2">保存する</button>
                 <button onclick="cancelProfileEdit()" id="profileCancelBtn" class="hidden flex-1 border py-2 text-gray-400 font-bold">中止</button>
@@ -97,12 +96,11 @@
     <div id="panel-library" class="hidden">
         <div class="card p-3">
             <div class="section-title mb-2">記事ストック</div>
-            <textarea id="libInput" rows="3" placeholder="URLや記事本文" class="w-full p-2 mb-2 border"></textarea>
+            <textarea id="libInput" rows="3" placeholder="記事本文など" class="w-full p-2 mb-2 border"></textarea>
             <div class="flex gap-2">
                 <button onclick="addToLibrary()" class="flex-1 btn-note py-2">追加</button>
-                <button onclick="mergeStockToProject()" class="flex-1 border border-note text-note font-bold py-2 rounded text-[10px]">選択したストックを執筆に割込</button>
+                <button onclick="mergeStockToProject()" class="flex-1 border border-note text-note font-bold py-2 rounded text-[10px]">執筆に割込</button>
             </div>
-            <p class="text-[9px] text-gray-400 mt-1">※割込は、記事作成画面を開いている時に有効です。</p>
         </div>
         <div id="libraryList"></div>
     </div>
@@ -135,97 +133,105 @@
 
     <script>
         const MASTER_KEY = 'NOTE_PRO_MASTER_STORAGE';
-        let store = JSON.parse(localStorage.getItem(MASTER_KEY)) || { 
-            memos: [], projects: [], profiles: [], library: [], myLongProfile: "", apiKey: "", activeModel: "", foundModels: [], activeProfileId: null
-        };
+        let store = { memos: [], projects: [], profiles: [], library: [], myLongProfile: "", apiKey: "", activeModel: "", foundModels: [], activeProfileId: null };
 
-        function save() { localStorage.setItem(MASTER_KEY, JSON.stringify(store)); renderAll(); }
+        // 起動時：データの安全な読み込みと修復
+        try {
+            const saved = JSON.parse(localStorage.getItem(MASTER_KEY));
+            if (saved) {
+                store = { ...store, ...saved };
+                // デザイン項目がない古いデータの修復
+                store.profiles = store.profiles.map(p => ({ ...p, design: p.design || "" }));
+            }
+        } catch (e) { console.error("Data Load Error", e); }
 
-        // --- note特化ツール ---
-        async function generateTools(type) {
-            const proj = store.projects.find(p => p.id === store.activeProjectId);
-            if(!proj || proj.chatHistory.length === 0) return alert('先に記事の内容を壁打ちしてください');
-
-            let prompt = "";
-            if(type === 'title') prompt = "これまでの内容に基づき、noteのタイトル案を5つ（共感型、メリット型、権威型など）と、最適なハッシュタグを10個提案して。";
-            if(type === 'intro') prompt = "これまでの内容に基づき、読者を引き込む魅力的なnoteの導入文（リード文）を200文字以内で作成して。";
-            if(type === 'photo') prompt = "これまでの内容に基づき、この記事のnote見出し画像（カバー写真）のディレクション案を出して。具体的な構図、雰囲気、撮影の指示、もし画像生成AIを使う場合のプロンプト例を含めて。";
-
-            const input = document.getElementById('refineInput');
-            input.value = prompt;
-            refine(); // 自動送信
+        function save() { 
+            try {
+                localStorage.setItem(MASTER_KEY, JSON.stringify(store)); 
+                renderAll(); 
+            } catch (e) { alert("保存に失敗しました: " + e.message); }
         }
 
-        // --- ストック割込機能 ---
-        function mergeStockToProject() {
-            if(!store.activeProjectId) return alert('記事作成画面を開いてから実行してください');
-            const checks = document.querySelectorAll('.lib-check:checked');
-            if(checks.length === 0) return alert('ストックを選択してください');
-            
-            const text = Array.from(checks).map(cb => store.library.find(l => l.id == cb.dataset.id).text).join('\n\n---\n\n');
-            const input = document.getElementById('refineInput');
-            input.value = `【参考資料の追加】\n以下のストック情報を今後の執筆の参考にして:\n\n${text}`;
-            refine(); // 自動送信
-            switchTab('projects');
+        function switchTab(t) {
+            try {
+                ['projects','styles','library','memo','plan'].forEach(p=>{
+                    const el = document.getElementById('panel-'+p);
+                    const btn = document.getElementById('tab-'+p);
+                    if(el) el.classList.add('hidden');
+                    if(btn) btn.classList.remove('active');
+                });
+                const activePanel = document.getElementById('panel-'+t);
+                const activeBtn = document.getElementById('tab-'+t);
+                if(activePanel) activePanel.classList.remove('hidden');
+                if(activeBtn) activeBtn.classList.add('active');
+            } catch (e) { console.error(e); }
         }
 
-        // --- デザインヒント表示 ---
-        function showDesignHint() {
-            const profile = store.profiles.find(p => p.id == store.activeProfileId);
-            if(profile && profile.design) alert(`【デザイン/写真の方向性】\n\n${profile.design}`);
-            else alert('デザインメモは登録されていません');
-        }
-
-        // --- 通信ロジック ---
         async function refine() {
-            const proj = store.projects.find(p => p.id === store.activeProjectId);
-            const input = document.getElementById('refineInput');
-            const userText = input.value.trim();
-            if(!userText || !store.apiKey) return;
+            try {
+                const proj = store.projects.find(p => p.id === store.activeProjectId);
+                const input = document.getElementById('refineInput');
+                const userText = input.value.trim();
+                if(!userText || !store.apiKey) return;
 
-            input.value = '';
-            const profile = store.profiles.find(p => p.id == store.activeProfileId);
-            
-            const systemText = proj.chatHistory.length === 0 
-                ? `プロフィール:\n${store.myLongProfile}\n${profile ? '適応文体:\n' + profile.text : ""}\n\n指示: ${userText}`
-                : userText;
+                input.value = '';
+                const profile = store.profiles.find(p => p.id == store.activeProfileId);
+                const systemText = proj.chatHistory.length === 0 
+                    ? `プロフィール:\n${store.myLongProfile}\n${profile ? '適応文体:\n' + profile.text : ""}\n\n指示: ${userText}`
+                    : userText;
 
-            proj.chatHistory.push({ role: "user", parts: [{ text: systemText }] });
-            renderChat();
+                proj.chatHistory.push({ role: "user", parts: [{ text: systemText }] });
+                renderChat();
 
-            document.getElementById('sendBtn').disabled = true;
-            document.getElementById('chatTyping').classList.remove('hidden');
+                document.getElementById('sendBtn').disabled = true;
+                document.getElementById('chatTyping').classList.remove('hidden');
 
-            const aiRes = await callGemini(proj.chatHistory);
-            
-            proj.chatHistory.push({ role: "model", parts: [{ text: aiRes }] });
-            document.getElementById('chatTyping').classList.add('hidden');
-            document.getElementById('sendBtn').disabled = false;
-            save(); renderChat();
+                const aiRes = await callGemini(proj.chatHistory);
+                proj.chatHistory.push({ role: "model", parts: [{ text: aiRes }] });
+                
+                document.getElementById('chatTyping').classList.add('hidden');
+                document.getElementById('sendBtn').disabled = false;
+                save(); 
+                renderChat();
+            } catch (e) { alert(e.message); document.getElementById('chatTyping').classList.add('hidden'); document.getElementById('sendBtn').disabled = false; }
         }
 
         async function callGemini(history) {
             const cleanHistory = history.filter(h => !h.parts[0].text.startsWith('【ERROR】'));
             const model = store.activeModel || "gemini-1.5-flash";
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${store.apiKey}`;
-            try {
-                const res = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: cleanHistory }) });
-                const data = await res.json();
-                if (!res.ok) return `【ERROR】\n${data.error?.message || "通信エラー"}`;
-                return data.candidates[0].content.parts[0].text;
-            } catch (e) { return `【ERROR】\n${e.message}`; }
+            const res = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: cleanHistory }) });
+            const data = await res.json();
+            if (!res.ok) return `【ERROR】\n${data.error?.message || "通信エラー"}`;
+            return data.candidates[0].content.parts[0].text;
         }
 
-        // --- 文体編集 ---
+        // --- 文体/デザイン管理 ---
         function editProfile(id) {
             const p = store.profiles.find(x => x.id === id);
+            if(!p) return;
             document.getElementById('editingProfileId').value = p.id;
             document.getElementById('profileName').value = p.name;
             document.getElementById('profileText').value = p.text;
-            document.getElementById('profileDesign').value = p.design || ""; // デザインメモ読み込み
+            document.getElementById('profileDesign').value = p.design || "";
             document.getElementById('profileAddBtn').innerText = "更新";
             document.getElementById('profileCancelBtn').classList.remove('hidden');
-            switchTab('styles'); window.scrollTo(0, 0);
+            switchTab('styles');
+        }
+
+        function addProfile() {
+            const id = document.getElementById('editingProfileId').value;
+            const name = document.getElementById('profileName').value.trim();
+            const text = document.getElementById('profileText').value.trim();
+            const design = document.getElementById('profileDesign').value.trim();
+            if(!name) return;
+            if(id) {
+                const idx = store.profiles.findIndex(p => p.id == id);
+                if(idx !== -1) store.profiles[idx] = { id: parseInt(id), name, text, design };
+            } else {
+                store.profiles.unshift({ id: Date.now(), name, text, design });
+            }
+            cancelProfileEdit(); save();
         }
 
         function cancelProfileEdit() {
@@ -237,63 +243,60 @@
             document.getElementById('profileCancelBtn').classList.add('hidden');
         }
 
-        function addProfile() {
-            const id = document.getElementById('editingProfileId').value;
-            const name = document.getElementById('profileName').value.trim();
-            const text = document.getElementById('profileText').value.trim();
-            const design = document.getElementById('profileDesign').value.trim();
-            if(!name) return;
+        // --- noteツール群 ---
+        function generateTools(type) {
+            const proj = store.projects.find(p => p.id === store.activeProjectId);
+            if(!proj || proj.chatHistory.length === 0) return alert('内容を入力してください');
+            let prompt = "";
+            if(type === 'title') prompt = "タイトル案を5つとハッシュタグを10個提案して。";
+            if(type === 'intro') prompt = "魅力的な導入文を200文字で作成して。";
+            if(type === 'photo') prompt = "見出し画像の構図・雰囲気案、AIプロンプトを出して。";
+            document.getElementById('refineInput').value = prompt;
+            refine();
+        }
 
-            if(id) {
-                const idx = store.profiles.findIndex(p => p.id == id);
-                store.profiles[idx] = { id: p.id, name, text, design };
-            } else {
-                store.profiles.unshift({ id: Date.now(), name, text, design });
-            }
-            cancelProfileEdit(); save();
+        function showDesignHint() {
+            const p = store.profiles.find(x => x.id == store.activeProfileId);
+            if(p && p.design) alert("【デザインメモ】\n" + p.design);
+            else alert("メモはありません");
         }
 
         // --- 描画 ---
         function renderAll() {
-            const label = document.getElementById('statusLabel');
-            if(store.activeModel) { label.innerText = store.activeModel; label.className = "text-[8px] font-bold px-2 py-0.5 rounded bg-green-100 text-green-600 italic uppercase"; }
-            
-            // 文体選択時にデザインヒントボタンを表示
-            document.getElementById('designHintBtn').classList.toggle('hidden', !store.activeProfileId);
+            try {
+                const label = document.getElementById('statusLabel');
+                if(store.activeModel && label) { label.innerText = store.activeModel; label.className = "text-[8px] font-bold px-2 py-0.5 rounded bg-green-100 text-green-600 italic uppercase"; }
+                
+                document.getElementById('designHintBtn').classList.toggle('hidden', !store.activeProfileId);
 
-            document.getElementById('projectGrid').innerHTML = store.projects.map(p => `<div class="card p-2 flex justify-between items-center"><div onclick="openProject(${p.id})" class="flex-1 font-black text-xs text-note truncate">${p.title}</div><button onclick="if(confirm('削除?')){store.projects=store.projects.filter(x=>x.id!==${p.id});save();}" class="btn-danger px-2">×</button></div>`).join('');
-            
-            document.getElementById('profileList').innerHTML = store.profiles.map(p => `
-                <div class="list-item border-b py-2">
-                    <div class="flex justify-between mb-1"><div class="font-bold text-note uppercase text-[10px]">${p.name}</div><div class="flex gap-2"><button onclick="editProfile(${p.id})" class="btn-edit text-note">編集</button><button onclick="if(confirm('削除?')){store.profiles=store.profiles.filter(x=>x.id!==${p.id});save();}" class="btn-danger border-red-100">削除</button></div></div>
-                    <div class="text-gray-400 text-[9px] line-clamp-1 mb-1">文体: ${p.text}</div>
-                    ${p.design ? `<div class="text-gray-400 text-[9px] line-clamp-1">デザイン: ${p.design}</div>` : ''}
-                </div>`).join('');
+                document.getElementById('projectGrid').innerHTML = store.projects.map(p => `<div class="card p-2 flex justify-between items-center"><div onclick="openProject(${p.id})" class="flex-1 font-black text-xs text-note truncate">${p.title}</div><button onclick="if(confirm('削除?')){store.projects=store.projects.filter(x=>x.id!==${p.id});save();}" class="btn-danger px-2">×</button></div>`).join('');
+                document.getElementById('profileList').innerHTML = store.profiles.map(p => `<div class="list-item border-b py-2"><div class="flex justify-between mb-1"><div class="font-bold text-note uppercase text-[10px]">${p.name}</div><div class="flex gap-2"><button onclick="editProfile(${p.id})" class="btn-edit text-note">編集</button><button onclick="if(confirm('削除?')){store.profiles=store.profiles.filter(x=>x.id!==${p.id});save();}" class="btn-danger">削除</button></div></div></div>`).join('');
+                document.getElementById('libraryList').innerHTML = store.library.map(l => `<div class="list-item flex gap-2 items-start"><input type="checkbox" class="lib-check mt-1" data-id="${l.id}"><div class="flex-1"><p class="line-clamp-2 text-gray-700 leading-tight">${l.text}</p></div></div>`).join('');
+                document.getElementById('timeline').innerHTML = store.memos.map(m => `<div class="list-item py-2 border-b"><div class="flex justify-between text-[9px] text-gray-400"><span>${new Date(m.id).toLocaleDateString()}</span><button onclick="if(confirm('削除?')){store.memos=store.memos.filter(x=>x.id!==${m.id});save();}" class="btn-danger">削除</button></div><p class="text-[12px]">${m.text}</p></div>`).join('');
 
-            // ストックにチェックボックス追加
-            document.getElementById('libraryList').innerHTML = store.library.map(l => `
-                <div class="list-item flex gap-2 items-start"><input type="checkbox" class="lib-check mt-1" data-id="${l.id}"><div class="flex-1"><div class="flex justify-between mb-1 text-[8px] text-gray-400"><span>${new Date(l.id).toLocaleDateString()}</span><div class="flex gap-2 font-bold uppercase"><button onclick="copyLibToStyle(\`${l.text}\`)" class="text-note">移行</button><button onclick="store.library=store.library.filter(x=>x.id!==${l.id});save();" class="text-red-200">削除</button></div></div><p class="line-clamp-2 text-gray-700 leading-tight">${l.text}</p></div></div>
-            `).join('');
-
-            document.getElementById('timeline').innerHTML = store.memos.map(m => `<div class="x-card flex gap-2"><input type="checkbox" class="memo-check mt-1" data-id="${m.id}"><div class="x-avatar"></div><div class="flex-1"><div class="flex justify-between"><span class="text-gray-500 text-[9px]">@memo · ${new Date(m.id).toLocaleDateString()}</span><div class="flex gap-2 font-bold uppercase"><button onclick="editMemo(${m.id})" class="text-note text-[8px]">編集</button><button onclick="store.memos=store.memos.filter(x=>x.id!==${m.id});save();" class="text-red-100 text-[8px]">削除</button></div></div><div class="text-[12px] pr-2">${m.text}</div></div></div>`).join('');
-
-            document.getElementById('activeProfileSelect').innerHTML = '<option value="">文体を選択</option>' + store.profiles.map(p => `<option value="${p.id}" ${store.activeProfileId == p.id ? 'selected' : ''}>${p.name}</option>`).join('');
-            document.getElementById('modelSelector').innerHTML = '<option value="">モデルを選択</option>' + store.foundModels.map(m => `<option value="${m}" ${store.activeModel === m ? 'selected' : ''}>${m}</option>`).join('');
+                document.getElementById('activeProfileSelect').innerHTML = '<option value="">文体を選択</option>' + store.profiles.map(p => `<option value="${p.id}" ${store.activeProfileId == p.id ? 'selected' : ''}>${p.name}</option>`).join('');
+                const sel = document.getElementById('modelSelector');
+                if(sel) sel.innerHTML = '<option value="">モデルを選択</option>' + store.foundModels.map(m => `<option value="${m}" ${store.activeModel === m ? 'selected' : ''}>${m}</option>`).join('');
+            } catch (e) { console.error(e); }
         }
 
         function renderChat() {
-            const proj = store.projects.find(p => p.id === store.activeProjectId);
-            if(!proj) return;
-            const history = document.getElementById('chatHistory');
-            history.innerHTML = proj.chatHistory.map(msg => {
-                const isAI = msg.role === "model";
-                const text = msg.parts[0].text.replace(/プロフィール[\s\S]*指示: /, "");
-                const isErr = text.startsWith('【ERROR】');
-                return `<div class="chat-msg ${isAI ? (isErr ? 'msg-err' : 'msg-ai') : 'msg-user'}"><div class="whitespace-pre-wrap">${text}</div></div>`;
-            }).join('');
-            setTimeout(() => history.lastElementChild?.scrollIntoView({ behavior: 'smooth' }), 50);
+            try {
+                const proj = store.projects.find(p => p.id === store.activeProjectId);
+                if(!proj) return;
+                const history = document.getElementById('chatHistory');
+                history.innerHTML = proj.chatHistory.map(msg => {
+                    const text = msg.parts[0].text.replace(/プロフィール[\s\S]*指示: /, "");
+                    return `<div class="chat-msg ${msg.role === "model" ? 'msg-ai' : 'msg-user'}"><div class="whitespace-pre-wrap">${text}</div></div>`;
+                }).join('');
+                setTimeout(() => history.lastElementChild?.scrollIntoView({ behavior: 'smooth' }), 50);
+            } catch (e) { console.error(e); }
         }
 
-        // --- 基本機能 ---
-        function switchTab(t) { ['projects','styles','library','memo','plan'].forEach(p=>{document.getElementById('panel-'+p).classList.add('hidden');document.getElementById('tab-'+p).classList.remove('active');});document.getElementById('panel-'+t).classList.remove('hidden');document.getElementById('tab-'+t).classList.add('active'); }
-        function openProject(id) { store.activeProjectId=id; document.getElem
+        // --- 共通機能 ---
+        function openProject(id) { store.activeProjectId=id; document.getElementById('projectListArea').classList.add('hidden'); document.getElementById('activeEditorArea').classList.remove('hidden'); renderChat(); }
+        function exitProject() { store.activeProjectId=null; document.getElementById('projectListArea').classList.remove('hidden'); document.getElementById('activeEditorArea').classList.add('hidden'); renderAll(); }
+        function createNewProject() { const t=prompt('タイトル:'); if(t){ store.projects.unshift({id:Date.now(),title:t,chatHistory:[]}); save(); openProject(store.projects[0].id); } }
+        function clearChatHistory() { const proj=store.projects.find(p=>p.id===store.activeProjectId); if(proj&&confirm('履歴をリセット?')){ proj.chatHistory=[]; save(); renderChat(); } }
+        function postTweet() { const t=document.getElementById('tweetInput'); if(t.value.trim()){ store.memos.unshift({id:Date.now(),text:t.value.trim()}); t.value=''; save(); } }
+        function addToLibrary() { const t=document.getElementById('libInput').value.trim(); if(t){ store.l
