@@ -3,29 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Note Assistant v98</title>
+    <title>Note Assistant v99</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { theme: { extend: { colors: { note: '#2cb696' } } } }
     </script>
     <style>
-        /* 物理レイアウト：ヘッダーを独立させ、中身だけをスクロールさせる */
-        html, body { height: 100dvh; overflow: hidden; margin: 0; padding: 0; background: #f4f8f8; color: #333; }
-        .app-shell { display: flex; flex-direction: column; height: 100dvh; }
-        .app-header { flex: 0 0 auto; background: #f4f8f8; border-bottom: 1px solid #e2e8e8; padding: 8px 8px 0 8px; z-index: 100; }
-        .app-body { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px; }
-
+        /* 複雑な高さを指定せず、ブラウザの標準挙動に任せる */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f8f8; color: #333; line-height: 1.6; margin: 0; padding: 0; }
+        
+        /* 固定ヘッダー：ブラウザ標準のstickyを使用 */
+        .app-header { position: sticky; top: 0; z-index: 1000; background: #f4f8f8; border-bottom: 1px solid #e2e8e8; padding: 8px 8px 0 8px; width: 100%; }
+        
+        .main-content { padding: 12px; }
         .card { background: white; border-radius: 8px; margin-bottom: 12px; border: 1px solid #e2e8e8; overflow: hidden; }
-        .section-title { font-size: 10px; font-weight: 800; color: #718096; padding: 6px 12px; background: #fafcfc; border-bottom: 1px solid #f1f5f5; text-transform: uppercase; letter-spacing: 0.05em; }
+        .section-title { font-size: 10px; font-weight: 800; color: #718096; padding: 6px 12px; background: #fafcfc; border-bottom: 1px solid #f1f5f5; }
         textarea, input, select { font-size: 12px !important; outline: none; border: 1px solid #edf2f2; border-radius: 6px; }
         .btn-note { background: #2cb696; color: white; border-radius: 6px; font-weight: 800; font-size: 11px; transition: 0.1s; padding: 10px; }
         .tab-btn { font-size: 10px; font-weight: 800; padding: 14px 2px; color: #a0aec0; border-bottom: 2px solid transparent; flex: 1; text-align: center; }
         .tab-btn.active { color: #2cb696; border-bottom-color: #2cb696; }
-        .chat-msg { font-size: 12px; padding: 12px 14px; border-radius: 12px; margin-bottom: 12px; max-width: 95%; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        .chat-msg { font-size: 12px; padding: 12px 14px; border-radius: 12px; margin-bottom: 12px; max-width: 95%; box-shadow: 0 1px 3px rgba(0,0,0,0.01); }
         .msg-ai { background: #f0f7f6; border: 1px solid #d1e7e4; align-self: flex-start; }
         .msg-user { background: #2cb696; color: white; align-self: flex-end; margin-left: auto; }
-        .btn-sub { background: white; border: 1px solid #2cb696; color: #2cb696; font-size: 10px; font-weight: 800; padding: 6px 12px; border-radius: 6px; }
-        .btn-danger { color: #fed7d7; font-size: 9px; font-weight: bold; }
+        .btn-sub { background: white; border: 1px solid #2cb696; color: #2cb696; font-size: 10px; font-weight: 800; padding: 6px 10px; border-radius: 6px; }
+        .btn-danger-text { color: #fed7d7; font-size: 9px; font-weight: bold; background: none; border: none; }
         
         /* Markdown 装飾 */
         .md-bold { font-weight: 900; color: #1a3a34; }
@@ -35,100 +36,97 @@
 </head>
 <body>
 
-    <div class="app-shell">
-        <div class="app-header">
-            <header class="flex justify-between items-center mb-1 px-1">
-                <h1 class="font-black text-note text-sm italic tracking-tighter uppercase">Note Assistant <span class="text-gray-300 text-[8px] not-italic">v98</span></h1>
-                <div id="statusLabel" class="text-[8px] font-bold px-2 py-0.5 rounded bg-green-50 text-green-600 uppercase italic">READY</div>
-            </header>
-            <div class="flex bg-white rounded-t-lg shadow-sm">
-                <button onclick="switchTab('projects')" id="tab-projects" class="tab-btn active">記事作成</button>
-                <button onclick="switchTab('styles')" id="tab-styles" class="tab-btn">文体保存</button>
-                <button onclick="switchTab('library')" id="tab-library" class="tab-btn">ストック</button>
-                <button onclick="switchTab('memo')" id="tab-memo" class="tab-btn">タイムライン</button>
-                <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn">設定</button>
-            </div>
+    <div class="app-header">
+        <header class="flex justify-between items-center mb-1 px-1">
+            <h1 class="font-black text-note text-sm italic tracking-tighter uppercase">Note Assistant <span class="text-gray-300 text-[8px] not-italic">v99</span></h1>
+            <div id="statusLabel" class="text-[8px] font-bold px-2 py-0.5 rounded bg-green-50 text-green-600 uppercase">READY</div>
+        </header>
+        <div class="flex bg-white rounded-t-lg shadow-sm">
+            <button onclick="switchTab('projects')" id="tab-projects" class="tab-btn active">記事作成</button>
+            <button onclick="switchTab('styles')" id="tab-styles" class="tab-btn">文体保存</button>
+            <button onclick="switchTab('library')" id="tab-library" class="tab-btn">ストック</button>
+            <button onclick="switchTab('memo')" id="tab-memo" class="tab-btn">タイムライン</button>
+            <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn">設定</button>
         </div>
+    </div>
 
-        <div class="app-body" id="scrollArea">
+    <div class="main-content">
+        
+        <div id="panel-projects">
+            <div id="projectListArea">
+                <div class="card p-3 mb-4 bg-note/5">
+                    <div class="flex gap-2">
+                        <input type="text" id="newDraftInput" placeholder="記事のタイトル" class="flex-1 p-2 border">
+                        <button onclick="createProject()" class="btn-note px-4">作成</button>
+                    </div>
+                </div>
+                <div id="projectGrid"></div>
+            </div>
             
-            <div id="panel-projects">
-                <div id="projectListArea">
-                    <div class="card p-3 mb-4 bg-note/5">
-                        <div class="flex gap-2">
-                            <input type="text" id="newDraftInput" placeholder="タイトルを入力" class="flex-1 p-2 border">
-                            <button onclick="createProject()" class="btn-note px-4 uppercase">作成</button>
-                        </div>
+            <div id="activeEditorArea" class="hidden">
+                <div class="sticky top-[80px] bg-[#f4f8f8] py-2 z-20 border-b mb-3">
+                    <div class="flex justify-between items-center mb-2">
+                        <button onclick="backToList()" class="text-note font-black text-[11px] uppercase">← BACK TO LIST</button>
+                        <button onclick="clearChatHistory()" class="btn-danger-text px-2">履歴リセット</button>
                     </div>
-                    <div id="projectGrid"></div>
+                    <select id="activeProfileSelect" onchange="changeActiveProfile()" class="w-full p-2 mb-2 text-[11px] bg-white border font-bold text-note rounded">
+                        <option value="">適応する文体を選択</option>
+                    </select>
+                    <div class="flex gap-1 overflow-x-auto pb-1">
+                        <button onclick="specialTask('clean')" class="btn-sub whitespace-nowrap">清書</button>
+                        <button onclick="specialTask('sim')" class="btn-sub whitespace-nowrap">分析</button>
+                        <button onclick="copyToClipboard()" class="btn-sub whitespace-nowrap bg-note text-white">コピー</button>
+                    </div>
                 </div>
-                
-                <div id="activeEditorArea" class="hidden">
-                    <div class="sticky top-0 bg-[#f4f8f8] py-2 z-20 border-b mb-3">
-                        <div class="flex justify-between items-center mb-2">
-                            <button onclick="backToList()" class="text-note font-black text-[11px] uppercase tracking-wider">← BACK TO LIST</button>
-                            <button onclick="clearChatHistory()" class="text-[9px] font-bold text-red-300 border border-red-100 px-2 py-1 rounded bg-white uppercase">Reset</button>
-                        </div>
-                        <select id="activeProfileSelect" onchange="changeActiveProfile()" class="w-full p-2 mb-2 text-[11px] bg-white border font-bold text-note rounded">
-                            <option value="">文体を選択</option>
-                        </select>
-                        <div class="flex gap-1 overflow-x-auto pb-1">
-                            <button onclick="specialTask('clean')" class="btn-sub whitespace-nowrap shadow-sm">清書</button>
-                            <button onclick="specialTask('sim')" class="btn-sub whitespace-nowrap shadow-sm">分析</button>
-                            <button onclick="copyToClipboard()" class="btn-sub whitespace-nowrap bg-note text-white">コピー</button>
-                        </div>
-                    </div>
-                    <div id="chatHistory" class="flex flex-col mb-4 min-h-[100px]"></div>
-                    <div id="typingLabel" class="hidden text-center text-note text-[10px] animate-pulse mb-4 italic uppercase">AI Thinking...</div>
-                    <div class="card p-2 sticky bottom-0 shadow-2xl border-note/20 z-10">
-                        <div class="flex gap-2">
-                            <textarea id="refineInput" rows="2" placeholder="指示を入力" class="flex-1 p-2 text-xs border-none bg-gray-50 rounded resize-none"></textarea>
-                            <button onclick="sendRefine()" id="sendBtn" class="bg-gray-900 text-white px-4 rounded font-bold text-[11px] uppercase">送信</button>
-                        </div>
+                <div id="chatHistory" class="flex flex-col mb-4"></div>
+                <div id="typingLabel" class="hidden text-center text-note text-[10px] animate-pulse mb-4 italic uppercase">AI Thinking...</div>
+                <div class="card p-2 sticky bottom-4 shadow-2xl border-note/20 z-10">
+                    <div class="flex gap-2">
+                        <textarea id="refineInput" rows="2" placeholder="指示を入力" class="flex-1 p-2 text-xs border-none bg-gray-50 rounded resize-none"></textarea>
+                        <button onclick="sendRefine()" id="sendBtn" class="bg-gray-900 text-white px-4 rounded font-bold text-[11px] uppercase">送信</button>
                     </div>
                 </div>
             </div>
-
-            <div id="panel-styles" class="hidden">
-                <div class="card p-4">
-                    <div class="section-title mb-2 uppercase font-black">Style Management</div>
-                    <input type="hidden" id="editingId">
-                    <input type="text" id="styleName" placeholder="名前" class="w-full p-3 mb-2 border text-xs">
-                    <textarea id="styleText" rows="6" placeholder="お手本の文章を貼り付け" class="w-full p-3 mb-2 border text-xs"></textarea>
-                    <button onclick="addStyle()" id="styleBtn" class="w-full btn-note uppercase shadow-md">保存する</button>
-                </div>
-                <div id="styleList"></div>
-            </div>
-
-            <div id="panel-library" class="hidden">
-                <div class="card p-4">
-                    <div class="section-title mb-2 uppercase font-black">Article Stock</div>
-                    <textarea id="libInput" rows="4" placeholder="URLやフレーズをストック" class="w-full p-3 mb-2 border text-xs"></textarea>
-                    <button onclick="addLib()" class="w-full btn-note uppercase shadow-md">ストックに追加</button>
-                </div>
-                <div id="libraryList"></div>
-            </div>
-
-            <div id="panel-memo" class="hidden">
-                <div class="card p-4">
-                    <div class="section-title mb-2 uppercase font-black">Memory Timeline</div>
-                    <textarea id="tweetInput" rows="3" placeholder="今の思考をメモ..." class="w-full p-3 mb-2 text-xs border bg-gray-50/30 rounded"></textarea>
-                    <button onclick="addMemo()" class="w-full bg-[#1d9bf0] text-white py-3 rounded-full font-black text-xs uppercase shadow-lg">Post Memo</button>
-                </div>
-                <div id="timelineList"></div>
-            </div>
-
-            <div id="panel-settings" class="hidden">
-                <div class="card p-4">
-                    <div class="section-title mb-1 uppercase font-black">My Profile</div>
-                    <textarea id="myProfileInput" rows="5" class="w-full p-3 text-xs border bg-gray-50/20 mb-4"></textarea>
-                    <div class="section-title mb-1 uppercase font-black">Gemini API Key</div>
-                    <input type="password" id="apiKeyInput" placeholder="Enter API Key" class="w-full p-3 text-xs border mb-3">
-                    <button onclick="saveSettings()" class="w-full bg-gray-800 text-white py-3 rounded text-[10px] font-bold uppercase shadow-lg">Update All</button>
-                </div>
-            </div>
-
         </div>
+
+        <div id="panel-styles" class="hidden">
+            <div class="card p-4">
+                <div class="section-title mb-2 uppercase font-black">Style Management</div>
+                <input type="hidden" id="editingId">
+                <input type="text" id="styleName" placeholder="名前" class="w-full p-3 mb-2 border text-xs">
+                <textarea id="styleText" rows="6" placeholder="お手本の文章" class="w-full p-3 mb-2 border text-xs"></textarea>
+                <button onclick="addStyle()" class="w-full btn-note uppercase">保存</button>
+            </div>
+            <div id="styleList"></div>
+        </div>
+
+        <div id="panel-library" class="hidden">
+            <div class="card p-4">
+                <div class="section-title mb-2 uppercase font-black">Stock</div>
+                <textarea id="libInput" rows="4" placeholder="URLやフレーズをストック" class="w-full p-3 mb-2 border text-xs"></textarea>
+                <button onclick="addLib()" class="w-full btn-note uppercase">ストックに追加</button>
+            </div>
+            <div id="libraryList"></div>
+        </div>
+
+        <div id="panel-memo" class="hidden">
+            <div class="card p-4">
+                <div class="section-title mb-2 uppercase font-black">Timeline</div>
+                <textarea id="tweetInput" rows="3" placeholder="今の思考をメモ..." class="w-full p-3 mb-2 text-xs border bg-gray-50/30 rounded"></textarea>
+                <button onclick="addMemo()" class="w-full bg-[#1d9bf0] text-white py-3 rounded-full font-black text-xs uppercase shadow-lg">Post</button>
+            </div>
+            <div id="timelineList"></div>
+        </div>
+
+        <div id="panel-settings" class="hidden">
+            <div class="card p-4">
+                <div class="section-title mb-2 uppercase font-black">Profile / API Key</div>
+                <textarea id="myProfileInput" rows="5" class="w-full p-3 text-xs border bg-gray-50/20 mb-4"></textarea>
+                <input type="password" id="apiKeyInput" placeholder="Enter API Key" class="w-full p-3 text-xs border mb-3">
+                <button onclick="saveSettings()" class="w-full bg-gray-800 text-white py-3 rounded text-[10px] font-bold uppercase shadow-lg">Update All</button>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -140,7 +138,7 @@
                 const saved = localStorage.getItem(DB);
                 if(saved) store = {...store, ...JSON.parse(saved)};
                 renderAll();
-            } catch(e) { console.error("Initialize failed", e); }
+            } catch(e) { console.error(e); }
         }
 
         function save() { localStorage.setItem(DB, JSON.stringify(store)); renderAll(); }
@@ -149,12 +147,11 @@
             ['projects','styles','library','memo','settings'].forEach(p => {
                 const el = document.getElementById('panel-'+p);
                 if (el) el.classList.add('hidden');
-                const btn = document.getElementById('tab-'+p);
-                if (btn) btn.classList.remove('active');
+                document.getElementById('tab-'+p).classList.remove('active');
             });
             document.getElementById('panel-'+t).classList.remove('hidden');
             document.getElementById('tab-'+t).classList.add('active');
-            document.getElementById('scrollArea').scrollTo(0, 0);
+            window.scrollTo(0, 0);
         }
 
         function cleanMarkup(text) {
@@ -179,12 +176,11 @@
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${store.activeModel}:generateContent?key=${store.apiKey}`;
                 const res = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: proj.chatHistory.filter(h => h.parts && h.parts[0] && !h.parts[0].text.startsWith('【ERROR】')) }) });
                 const data = await res.json();
-                // 徹底ガード：data.candidatesの存在を確認
-                if(data.candidates && data.candidates.length > 0 && data.candidates[0].content) {
+                if(data.candidates && data.candidates[0] && data.candidates[0].content) {
                     proj.chatHistory.push({ role: "model", parts: [{ text: data.candidates[0].content.parts[0].text }] });
-                } else { throw new Error(data.error?.message || "AIが空の回答を返しました。"); }
+                } else { throw new Error(data.error?.message || "AI回答エラー"); }
                 save(); renderChat();
-            } catch(e) { alert("Error: " + e.message); }
+            } catch(e) { alert(e.message); }
             finally { document.getElementById('sendBtn').disabled = false; document.getElementById('typingLabel').classList.add('hidden'); }
         }
 
@@ -201,26 +197,26 @@
         }
 
         function renderAll() {
-            document.getElementById('projectGrid').innerHTML = store.projects.map(p => `<div class="card p-4 flex justify-between items-center border-l-4 border-l-note shadow-sm"><div onclick="openProject(${p.id})" class="flex-1 font-black text-xs text-note truncate uppercase">${p.title}</div><button onclick="if(confirm('ドラフトを削除しますか?')){store.projects=store.projects.filter(x=>x.id!==${p.id});save();}" class="btn-danger px-3 text-2xl font-light">×</button></div>`).join('');
-            document.getElementById('styleList').innerHTML = store.profiles.map(p => `<div class="list-item flex justify-between items-center border-b px-2"><div class="font-bold text-note uppercase text-[11px]">${p.name}</div><div class="flex gap-4"><button onclick="editStyle(${p.id})" class="text-gray-400 font-bold uppercase text-[10px]">Edit</button><button onclick="if(confirm('文体を削除しますか?')){store.profiles=store.profiles.filter(x=>x.id!==${p.id});save();}" class="btn-danger uppercase text-[9px]">Del</button></div></div>`).join('');
-            document.getElementById('libraryList').innerHTML = store.library.map(l => `<div class="list-item border-b px-2 py-3"><p class="line-clamp-2 text-gray-700 leading-tight mb-2 text-[12px]">${l.text}</p><button onclick="if(confirm('削除しますか?')){store.library=store.library.filter(x=>x.id!==${l.id});save();}" class="btn-danger text-[9px] uppercase font-bold">Delete</button></div>`).join('');
-            document.getElementById('timelineList').innerHTML = store.memos.map(m => `<div class="list-item py-4 border-b px-2"><div class="flex justify-between text-[10px] text-gray-400 mb-2"><span>${new Date(m.id).toLocaleString()}</span><div class="flex gap-4"><button onclick="editMemo(${m.id})" class="text-note font-bold uppercase text-[10px]">Edit</button><button onclick="if(confirm('削除しますか?')){store.memos=store.memos.filter(x=>x.id!==${m.id});save();}" class="btn-danger uppercase text-[9px]">Del</button></div></div><p class="text-[12px] leading-relaxed">${m.text}</p></div>`).join('');
+            document.getElementById('projectGrid').innerHTML = store.projects.map(p => `<div class="card p-4 flex justify-between items-center border-l-4 border-l-note"><div onclick="openProject(${p.id})" class="flex-1 font-black text-xs text-note truncate uppercase">${p.title}</div><button onclick="if(confirm('削除?')){store.projects=store.projects.filter(x=>x.id!==${p.id});save();}" class="btn-danger-text px-3 text-lg">×</button></div>`).join('');
+            document.getElementById('styleList').innerHTML = store.profiles.map(p => `<div class="list-item flex justify-between items-center border-b px-2"><div class="font-bold text-note uppercase text-[11px]">${p.name}</div><div class="flex gap-4"><button onclick="editStyle(${p.id})" class="text-gray-400 font-bold uppercase text-[10px]">Edit</button><button onclick="if(confirm('削除?')){store.profiles=store.profiles.filter(x=>x.id!==${p.id});save();}" class="btn-danger-text">Del</button></div></div>`).join('');
+            document.getElementById('libraryList').innerHTML = store.library.map(l => `<div class="list-item border-b px-2 py-3"><p class="line-clamp-2 text-gray-700 leading-tight mb-2 text-[12px]">${l.text}</p><button onclick="if(confirm('削除?')){store.library=store.library.filter(x=>x.id!==${l.id});save();}" class="btn-danger-text uppercase font-bold">Delete</button></div>`).join('');
+            document.getElementById('timelineList').innerHTML = store.memos.map(m => `<div class="list-item py-4 border-b px-2"><div class="flex justify-between text-[10px] text-gray-400 mb-2"><span>${new Date(m.id).toLocaleString()}</span><div class="flex gap-4"><button onclick="editMemo(${m.id})" class="text-note font-bold uppercase text-[10px]">Edit</button><button onclick="if(confirm('削除?')){store.memos=store.memos.filter(x=>x.id!==${m.id});save();}" class="btn-danger-text uppercase">Del</button></div></div><p class="text-[12px] leading-relaxed">${m.text}</p></div>`).join('');
             document.getElementById('apiKeyInput').value = store.apiKey || "";
             document.getElementById('myProfileInput').value = store.myLongProfile || "";
             document.getElementById('activeProfileSelect').innerHTML = '<option value="">文体を選択</option>' + store.profiles.map(p => `<option value="${p.id}" ${store.activeProfileId == p.id ? 'selected' : ''}>${p.name}</option>`).join('');
         }
 
         function createProject() { const v = document.getElementById('newDraftInput').value.trim(); if(!v) return; store.projects.unshift({ id: Date.now(), title: v, chatHistory: [] }); document.getElementById('newDraftInput').value = ""; save(); }
-        function openProject(id) { store.activeProjectId = id; document.getElementById('projectListArea').classList.add('hidden'); document.getElementById('activeEditorArea').classList.remove('hidden'); renderChat(); document.getElementById('scrollArea').scrollTo(0,0); }
-        function backToList() { store.activeProjectId = null; document.getElementById('projectListArea').classList.remove('hidden'); document.getElementById('activeEditorArea').classList.add('hidden'); document.getElementById('scrollArea').scrollTo(0,0); }
+        function openProject(id) { store.activeProjectId = id; document.getElementById('projectListArea').classList.add('hidden'); document.getElementById('activeEditorArea').classList.remove('hidden'); renderChat(); window.scrollTo(0,0); }
+        function backToList() { store.activeProjectId = null; document.getElementById('projectListArea').classList.remove('hidden'); document.getElementById('activeEditorArea').classList.add('hidden'); window.scrollTo(0,0); }
         async function specialTask(t) { const input = document.getElementById('refineInput'); input.value = (t === 'clean') ? "note用の本文のみを清書して。" : "読者の反応を分析して。"; sendRefine(); }
-        function copyToClipboard() { const proj = store.projects.find(p => p.id === store.activeProjectId); if(!proj) return; const lastMsg = proj.chatHistory.filter(m => m.role === 'model').slice(-1)[0]; if(lastMsg) { navigator.clipboard.writeText(lastMsg.parts[0].text).then(() => alert("Copied")); } }
+        function copyToClipboard() { const proj = store.projects.find(p => p.id === store.activeProjectId); if(!proj) return; const lastMsg = proj.chatHistory.filter(m => m.role === 'model').slice(-1)[0]; if(lastMsg) { navigator.clipboard.writeText(lastMsg.parts[0].text).then(() => alert("コピーしました")); } }
         function editStyle(id) { const p = store.profiles.find(x => x.id === id); document.getElementById('editingId').value = p.id; document.getElementById('styleName').value = p.name; document.getElementById('styleText').value = p.text; switchTab('styles'); }
         function addStyle() { const n = document.getElementById('styleName').value.trim(), t = document.getElementById('styleText').value.trim(), id = document.getElementById('editingId').value; if(!n || !t) return; if(id) { const idx = store.profiles.findIndex(p => p.id == id); store.profiles[idx] = { id: parseInt(id), name: n, text: t }; } else { store.profiles.unshift({ id: Date.now(), name: n, text: t }); } document.getElementById('editingId').value = ""; document.getElementById('styleName').value = ""; document.getElementById('styleText').value = ""; save(); }
         function addLib() { const v = document.getElementById('libInput').value.trim(); if(v){ store.library.unshift({id:Date.now(), text:v}); document.getElementById('libInput').value=""; save(); } }
         function addMemo() { const v = document.getElementById('tweetInput').value.trim(); if(v){ store.memos.unshift({id:Date.now(), text:v}); document.getElementById('tweetInput').value=""; save(); } }
-        function editMemo(id) { const m = store.memos.find(x => x.id === id); const n = prompt("メモを編集:", m.text); if(n) { m.text = n; save(); } }
-        function saveSettings() { store.apiKey = document.getElementById('apiKeyInput').value.trim(); store.myLongProfile = document.getElementById('myProfileInput').value; save(); alert("Settings Saved"); }
+        function editMemo(id) { const m = store.memos.find(x => x.id === id); const n = prompt("編集:", m.text); if(n) { m.text = n; save(); } }
+        function saveSettings() { store.apiKey = document.getElementById('apiKeyInput').value.trim(); store.myLongProfile = document.getElementById('myProfileInput').value; save(); alert("Saved"); }
         function changeActiveProfile() { store.activeProfileId = document.getElementById('activeProfileSelect').value; save(); }
         function clearChatHistory() { const proj=store.projects.find(p=>p.id===store.activeProjectId); if(proj&&confirm('履歴をリセットしますか？')){ proj.chatHistory=[]; save(); renderChat(); } }
 
