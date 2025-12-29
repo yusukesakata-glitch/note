@@ -3,47 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Note Assistant v58</title>
+    <title>Note Assistant v59</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { theme: { extend: { colors: { note: '#2cb696' } } } }
     </script>
     <style>
-        body { font-family: -apple-system, "Helvetica Neue", sans-serif; background: #f9fbfb; color: #333; }
-        /* 画像1000005285.jpgのデザインを精密に復元 */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f9fbfb; color: #333; }
         .card { background: white; border-radius: 14px; margin-bottom: 12px; border: 1px solid #eef3f3; box-shadow: 0 4px 12px rgba(44, 182, 150, 0.05); overflow: hidden; }
-        .section-title { font-size: 14px; font-weight: 800; color: #4a5568; padding: 12px 16px; border-bottom: 1px solid #f7fafc; background: #fff; }
+        .section-title { font-size: 13px; font-weight: 800; color: #4a5568; padding: 12px 16px; border-bottom: 1px solid #f7fafc; background: #fff; display: flex; justify-content: space-between; }
         textarea, input, select { font-size: 16px !important; outline: none; border: 1px solid #e2e8e8; border-radius: 8px; }
-        .x-post { border-bottom: 1px solid #f0f5f5; padding: 14px; background: white; }
+        .x-post { border-bottom: 1px solid #f0f5f5; padding: 14px; background: white; transition: background 0.2s; }
+        .x-post:active { background: #f8fafc; }
         .btn-note { background: #2cb696; color: white; border-radius: 10px; font-weight: 800; transition: 0.2s; }
         .btn-note:active { transform: scale(0.96); opacity: 0.9; }
+        /* スムーズなスクロール */
+        html { scroll-behavior: smooth; }
     </style>
 </head>
 <body class="p-3">
 
     <header class="flex justify-between items-center mb-3 px-1">
-        <h1 class="font-black text-note text-lg italic tracking-tighter">Note Assistant <span class="text-gray-200 text-[8px]">v58</span></h1>
-        <div id="keyBadge" class="text-[9px] font-bold px-2 py-1 rounded bg-green-100 text-green-600 italic">Key Loaded ✓</div>
+        <h1 class="font-black text-note text-lg italic tracking-tighter">Note Assistant <span class="text-gray-200 text-[8px]">v59</span></h1>
+        <div id="statusBadge" class="text-[9px] font-bold px-2 py-1 rounded bg-gray-100 text-gray-400 italic">Standby</div>
     </header>
 
     <div class="card">
-        <div class="section-title"><span>▼ 文体プロフィール設定</span></div>
+        <div class="section-title">
+            <span>▼ 文体プロフィール</span>
+            <span id="saveStatus" class="text-note opacity-0 transition-opacity text-[10px]">Saved!</span>
+        </div>
         <div class="p-4 pt-2">
-            <div class="flex gap-2 mb-3">
-                <select id="profileSelect" class="flex-1 p-2 bg-gray-50 border rounded-lg text-sm font-bold">
-                    <option>デフォルト</option>
-                </select>
-                <button class="text-note text-[10px] font-black p-1 uppercase">+ NEW</button>
-                <button class="text-red-400 text-[10px] font-black p-1 uppercase">DEL</button>
-            </div>
-            <textarea id="personalInfo" rows="3" placeholder="お手本の文章を貼り付けて「設定を保存」してください。" class="w-full p-3 text-sm border rounded-xl leading-relaxed bg-gray-50/30"></textarea>
-            <button onclick="saveAll()" class="w-full mt-3 btn-note py-3 text-sm shadow-lg shadow-note/20">設定を保存</button>
+            <textarea id="personalInfo" rows="3" placeholder="お手本の文章を貼り付けてください。AIがこの文体を学習します。" class="w-full p-3 text-sm border rounded-xl leading-relaxed bg-gray-50/30 mb-3"></textarea>
+            <button onclick="saveProfile()" class="w-full btn-note py-3 text-sm shadow-lg shadow-note/20">設定を保存</button>
         </div>
     </div>
 
     <div class="card">
         <div class="bg-note/5 text-[9px] font-black text-note px-4 py-2 border-b border-note/10 uppercase tracking-widest text-center italic">Editor</div>
-        <textarea id="mainContent" rows="8" placeholder="メモからネタを選んで追加するか、直接入力してください" class="w-full p-4 text-base border-none"></textarea>
+        <textarea id="mainContent" rows="8" placeholder="メモからネタを選んで追加するか、直接入力してください" class="w-full p-4 text-base border-none resize-none"></textarea>
         <div class="p-4 pt-0">
             <button onclick="generate()" id="btn-gen" class="w-full bg-gray-900 text-white py-5 rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all">
                 AI構成案を作成
@@ -51,103 +49,172 @@
         </div>
     </div>
 
-    <div id="loading" class="hidden text-center py-6 font-bold text-note animate-pulse italic">Connecting to Stable AI...</div>
+    <div id="loading" class="hidden text-center py-6 font-bold text-note animate-pulse italic">Connecting to Gemini AI...</div>
     <div id="resultContainer" class="hidden card p-5 border-2 border-note bg-white mb-6">
+        <div class="flex justify-between items-center mb-3 border-b pb-2">
+            <span class="text-xs font-black text-note italic">AI Result</span>
+            <button onclick="copyResult()" class="text-[10px] bg-gray-100 px-2 py-1 rounded font-bold">Copy</button>
+        </div>
         <div id="resultBody" class="text-base leading-loose whitespace-pre-wrap text-gray-800"></div>
     </div>
 
     <div class="flex items-center gap-2 mb-2 px-1 font-bold text-gray-400 text-[10px] uppercase tracking-widest">Memo Timeline</div>
     <div class="card">
         <div class="p-4 border-b bg-gray-50/50">
-            <textarea id="tweetInput" rows="2" placeholder="新しいネタをメモ..." class="w-full p-2 bg-white text-sm border border-gray-100 rounded-xl resize-none"></textarea>
-            <button onclick="postTweet()" class="w-full mt-2 bg-[#1d9bf0] text-white py-3 rounded-xl font-black text-sm active:scale-95 transition-all shadow-md">メモを保存</button>
+            <textarea id="tweetInput" rows="2" placeholder="新しいネタをメモ..." class="w-full p-2 bg-white text-sm border border-gray-100 rounded-xl resize-none mb-2"></textarea>
+            <button onclick="postTweet()" class="w-full bg-[#1d9bf0] text-white py-3 rounded-xl font-black text-sm active:scale-95 transition-all shadow-md">メモを保存</button>
         </div>
-        <div id="timeline" class="max-h-96 overflow-y-auto"></div>
+        <div id="timeline" class="max-h-[500px] overflow-y-auto">
+            </div>
     </div>
 
     <script>
-        // 【成功したキーを埋め込み済み】
-        const EMBEDDED_KEY = "AIzaSyDW_SSSPmUArMHEthTmKJZiGl1rYypsCXA";
+        // スマホでのエラー回避のため、キーをトリミングして使用
+        const RAW_KEY = "AIzaSyDW_SSSPmUArMHEthTmKJZiGl1rYypsCXA";
+        const API_KEY = RAW_KEY.trim();
 
-        const DB = 'NOTE_PRO_V58_STABLE';
-        let store = JSON.parse(localStorage.getItem(DB)) || { tweets: [], userInfo: "" };
+        const DB_NAME = 'NOTE_PRO_V59_DATA';
+        let store = JSON.parse(localStorage.getItem(DB_NAME)) || { tweets: [], userInfo: "" };
 
-        function rescue() {
-            const keys = ['NOTE_PRO_V57_FINAL', 'NOTE_PRO_V56_STABLE', 'NOTE_PRO_V55_FINAL'];
-            keys.forEach(k => {
-                const data = JSON.parse(localStorage.getItem(k));
-                if (data?.tweets) {
-                    data.tweets.forEach(t => {
-                        const txt = t.t || t.text;
-                        if (txt && !store.tweets.some(existing => existing.t === txt)) {
-                            store.tweets.push({ t: txt, d: t.d || new Date().toLocaleString() });
+        // 過去バージョンからのデータ救出
+        function rescueData() {
+            const oldKeys = ['NOTE_PRO_V58_STABLE', 'NOTE_PRO_V57_FINAL', 'NOTE_PRO_V56_STABLE'];
+            let migrationOccurred = false;
+            oldKeys.forEach(key => {
+                const oldData = JSON.parse(localStorage.getItem(key));
+                if (oldData && oldData.tweets) {
+                    oldData.tweets.forEach(t => {
+                        const content = t.t || t.text;
+                        if (content && !store.tweets.some(item => item.t === content)) {
+                            store.tweets.push({ t: content, d: t.d || new Date().toLocaleString() });
+                            migrationOccurred = true;
                         }
                     });
                 }
             });
-            save();
+            if (migrationOccurred) saveToDisk();
         }
 
-        function save() { localStorage.setItem(DB, JSON.stringify(store)); }
+        function saveToDisk() {
+            localStorage.setItem(DB_NAME, JSON.stringify(store));
+        }
 
-        function saveAll() {
+        function saveProfile() {
             store.userInfo = document.getElementById('personalInfo').value;
-            save();
-            alert('ミントグリーンの設定を保存しました');
-            render();
+            saveToDisk();
+            const badge = document.getElementById('saveStatus');
+            badge.style.opacity = '1';
+            setTimeout(() => badge.style.opacity = '0', 2000);
         }
 
         function postTweet() {
             const input = document.getElementById('tweetInput');
-            if(!input.value.trim()) return;
-            store.tweets.unshift({ t: input.value.trim(), d: new Date().toLocaleString() });
-            save();
+            const text = input.value.trim();
+            if(!text) return;
+            
+            store.tweets.unshift({ t: text, d: new Date().toLocaleString() });
+            saveToDisk();
             input.value = '';
-            render();
+            renderTimeline();
         }
 
-        function render() {
+        function renderTimeline() {
             const tl = document.getElementById('timeline');
+            if (store.tweets.length === 0) {
+                tl.innerHTML = `<div class="p-8 text-center text-gray-300 text-xs italic font-bold">No memos yet.</div>`;
+                return;
+            }
             tl.innerHTML = store.tweets.map((t, i) => `
                 <div class="x-post">
                     <div class="flex justify-between items-center mb-1 text-[9px] text-gray-400 font-mono">
                         <span>${t.d}</span>
-                        <div class="flex gap-4"><button onclick="addText(${i})" class="text-note font-black uppercase">Add</button></div>
+                        <div class="flex gap-4">
+                            <button onclick="addText(${i})" class="text-note font-black uppercase tracking-tighter">Add to Editor</button>
+                            <button onclick="deleteTweet(${i})" class="text-red-300 font-black uppercase tracking-tighter">Del</button>
+                        </div>
                     </div>
                     <p class="text-sm text-gray-700 leading-relaxed font-medium">${t.t}</p>
                 </div>
             `).join('');
         }
+
         function addText(i) {
             const ed = document.getElementById('mainContent');
-            ed.value += (ed.value ? '\n\n' : '') + store.tweets[i].t;
+            const content = store.tweets[i].t;
+            ed.value += (ed.value ? '\n\n' : '') + content;
+            window.scrollTo(0, ed.offsetTop - 20);
             ed.focus();
         }
 
-        async function generate() {
-            document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('resultContainer').classList.add('hidden');
-
-            const p = `お手本:\n${store.userInfo}\n内容:\n${document.getElementById('mainContent').value}\nNote構成案を作って。`;
-            
-            try {
-                // スマホでNotFoundになりにくい安定版モデルを直撃
-                const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${EMBEDDED_KEY}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: p }] }] })
-                });
-                const d = await r.json();
-                if(d.error) throw new Error(d.error.message);
-                document.getElementById('resultBody').innerText = d.candidates[0].content.parts[0].text;
-                document.getElementById('resultContainer').classList.remove('hidden').scrollIntoView({ behavior: 'smooth' });
-            } catch (e) { alert("失敗: " + e.message); }
-            finally { document.getElementById('loading').classList.add('hidden'); }
+        function deleteTweet(i) {
+            if(confirm('このメモを削除しますか？')) {
+                store.tweets.splice(i, 1);
+                saveToDisk();
+                renderTimeline();
+            }
         }
 
-        rescue();
+        async function generate() {
+            const mainContent = document.getElementById('mainContent').value.trim();
+            if(!mainContent) { alert("内容を入力してください"); return; }
+
+            const loading = document.getElementById('loading');
+            const resultContainer = document.getElementById('resultContainer');
+            const btn = document.getElementById('btn-gen');
+
+            loading.classList.remove('hidden');
+            resultContainer.classList.add('hidden');
+            btn.disabled = true;
+            btn.style.opacity = "0.5";
+
+            const prompt = `以下の「お手本」の文体を分析し、そのスタイルを維持したまま「内容」を整理してNoteの記事構成案（タイトル・見出し・本文の要約）を作成してください。\n\n# お手本:\n${store.userInfo}\n\n# 内容:\n${mainContent}`;
+            
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }]
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error ? data.error.message : "API通信エラー");
+                }
+
+                if (data.candidates && data.candidates[0].content.parts[0].text) {
+                    document.getElementById('resultBody').innerText = data.candidates[0].content.parts[0].text;
+                    resultContainer.classList.remove('hidden');
+                    resultContainer.scrollIntoView({ behavior: 'smooth' });
+                    document.getElementById('statusBadge').innerText = "Last Success: " + new Date().toLocaleTimeString();
+                    document.getElementById('statusBadge').className = "text-[9px] font-bold px-2 py-1 rounded bg-green-100 text-green-600 italic";
+                } else {
+                    throw new Error("AIからの応答が空でした。");
+                }
+
+            } catch (e) {
+                console.error(e);
+                alert("エラーが発生しました:\n" + e.message + "\n\n※APIキーの設定やネットワーク接続を確認してください。");
+                document.getElementById('statusBadge').innerText = "Error";
+                document.getElementById('statusBadge').className = "text-[9px] font-bold px-2 py-1 rounded bg-red-100 text-red-600 italic";
+            } finally {
+                loading.classList.add('hidden');
+                btn.disabled = false;
+                btn.style.opacity = "1";
+            }
+        }
+
+        function copyResult() {
+            const text = document.getElementById('resultBody').innerText;
+            navigator.clipboard.writeText(text).then(() => alert('コピーしました'));
+        }
+
+        // 初期化
+        rescueData();
         document.getElementById('personalInfo').value = store.userInfo || "";
-        render();
+        renderTimeline();
     </script>
 </body>
 </html>
