@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Note Assistant v61</title>
+    <title>Note Assistant v62</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { theme: { extend: { colors: { note: '#2cb696' } } } }
@@ -11,23 +11,22 @@
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f9fbfb; color: #333; }
         .card { background: white; border-radius: 14px; margin-bottom: 12px; border: 1px solid #eef3f3; box-shadow: 0 4px 12px rgba(44, 182, 150, 0.05); overflow: hidden; }
-        .section-title { font-size: 13px; font-weight: 800; color: #4a5568; padding: 12px 16px; border-bottom: 1px solid #f7fafc; background: #fff; display: flex; justify-content: space-between; }
-        textarea, input, select { font-size: 16px !important; outline: none; border: 1px solid #e2e8e8; border-radius: 8px; }
-        .x-post { border-bottom: 1px solid #f0f5f5; padding: 14px; background: white; }
+        .section-title { font-size: 13px; font-weight: 800; color: #4a5568; padding: 12px 16px; border-bottom: 1px solid #f7fafc; background: #fff; }
+        textarea { font-size: 16px !important; outline: none; border: 1px solid #e2e8e8; border-radius: 8px; }
         .btn-note { background: #2cb696; color: white; border-radius: 10px; font-weight: 800; transition: 0.2s; }
         .btn-note:active { transform: scale(0.96); opacity: 0.9; }
-        #timeline { max-height: 500px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .x-post { border-bottom: 1px solid #f0f5f5; padding: 14px; background: white; }
     </style>
 </head>
 <body class="p-3">
 
     <header class="flex justify-between items-center mb-3 px-1">
-        <h1 class="font-black text-note text-lg italic tracking-tighter">Note Assistant <span class="text-gray-200 text-[8px]">v61</span></h1>
-        <div id="statusBadge" class="text-[9px] font-bold px-2 py-1 rounded bg-gray-100 text-gray-400 italic">Ready</div>
+        <h1 class="font-black text-note text-lg italic tracking-tighter">Note Assistant <span class="text-gray-200 text-[8px]">v62</span></h1>
+        <div id="statusBadge" class="text-[9px] font-bold px-2 py-1 rounded bg-gray-100 text-gray-400 italic">Connecting...</div>
     </header>
 
     <div class="card">
-        <div class="section-title"><span>▼ 文体プロフィール</span></div>
+        <div class="section-title">▼ 文体プロフィール</div>
         <div class="p-4 pt-2">
             <textarea id="personalInfo" rows="3" placeholder="お手本の文章を貼り付けてください。" class="w-full p-3 text-sm border rounded-xl leading-relaxed bg-gray-50/30 mb-3"></textarea>
             <button onclick="saveProfile()" class="w-full btn-note py-3 text-sm shadow-lg shadow-note/20">設定を保存</button>
@@ -44,7 +43,7 @@
         </div>
     </div>
 
-    <div id="loading" class="hidden text-center py-6 font-bold text-note animate-pulse italic">AI Thinking...</div>
+    <div id="loading" class="hidden text-center py-6 font-bold text-note animate-pulse italic">Connecting to Google AI...</div>
     <div id="resultContainer" class="hidden card p-5 border-2 border-note bg-white mb-6">
         <div id="resultBody" class="text-base leading-loose whitespace-pre-wrap text-gray-800"></div>
     </div>
@@ -53,29 +52,30 @@
     <div class="card">
         <div class="p-4 border-b bg-gray-50/50">
             <textarea id="tweetInput" rows="2" placeholder="新しいネタをメモ..." class="w-full p-2 bg-white text-sm border border-gray-100 rounded-xl resize-none mb-2"></textarea>
-            <button onclick="postTweet()" class="w-full bg-[#1d9bf0] text-white py-3 rounded-xl font-black text-sm active:scale-95 shadow-md">メモを保存</button>
+            <button onclick="postTweet()" class="w-full bg-[#1d9bf0] text-white py-3 rounded-xl font-black text-sm shadow-md">メモを保存</button>
         </div>
-        <div id="timeline"></div>
+        <div id="timeline" class="max-h-96 overflow-y-auto"></div>
     </div>
 
     <script>
         const API_KEY = "AIzaSyDW_SSSPmUArMHEthTmKJZiGl1rYypsCXA".trim();
-        const DB_NAME = 'NOTE_PRO_V61_STABLE';
-
+        const DB_NAME = 'NOTE_PRO_V62_STABLE';
         let store = JSON.parse(localStorage.getItem(DB_NAME)) || { tweets: [], userInfo: "" };
 
-        // データ復元ロジック
+        // 過去データの全探索と復元
         function rescue() {
-            const keys = ['NOTE_PRO_V60_STABLE', 'NOTE_PRO_V59_DATA', 'NOTE_PRO_V58_STABLE'];
+            const keys = ['NOTE_PRO_V61_STABLE', 'NOTE_PRO_V60_STABLE', 'NOTE_PRO_V59_DATA', 'NOTE_PRO_V58_STABLE'];
             keys.forEach(k => {
                 const old = JSON.parse(localStorage.getItem(k));
                 if (old?.tweets) {
                     old.tweets.forEach(ot => {
-                        if (!store.tweets.some(st => st.t === (ot.t || ot.text))) {
-                            store.tweets.push({ t: ot.t || ot.text, d: ot.d || new Date().toLocaleString() });
+                        const txt = ot.t || ot.text;
+                        if (txt && !store.tweets.some(st => st.t === txt)) {
+                            store.tweets.push({ t: txt, d: ot.d || new Date().toLocaleString() });
                         }
                     });
                 }
+                if (!store.userInfo && old?.userInfo) store.userInfo = old.userInfo;
             });
             save();
         }
@@ -85,7 +85,7 @@
         function saveProfile() {
             store.userInfo = document.getElementById('personalInfo').value;
             save();
-            alert('保存完了');
+            alert('保存しました');
         }
 
         function postTweet() {
@@ -116,15 +116,21 @@
             ed.focus();
         }
 
-        // 【今回の重要修正】モデル名を fallback 付きで試行する関数
-        async function callGemini(prompt, modelName) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${API_KEY}`;
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-            });
-            return res;
+        // スマホ環境で「今」使えるモデルを自動で見つける関数
+        async function getAvailableModel() {
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`);
+                const data = await res.json();
+                if (!data.models) return "gemini-1.5-flash"; // 取得失敗時はデフォルト
+                
+                // 1.5-flash -> 1.5-pro -> 1.0-pro の順で利用可能なものを探す
+                const models = data.models.map(m => m.name.replace('models/', ''));
+                if (models.includes('gemini-1.5-flash')) return 'gemini-1.5-flash';
+                if (models.includes('gemini-1.5-pro')) return 'gemini-1.5-pro';
+                return models.find(m => m.includes('gemini')) || "gemini-1.5-flash";
+            } catch (e) {
+                return "gemini-1.5-flash";
+            }
         }
 
         async function generate() {
@@ -136,35 +142,32 @@
             loading.classList.remove('hidden');
             resultContainer.classList.add('hidden');
 
-            const prompt = `文体お手本:\n${store.userInfo}\n\n内容:\n${content}\n\n上記からNote構成案を作成して。`;
+            const model = await getAvailableModel();
+            console.log("Using model:", model);
+
+            const prompt = `文体お手本:\n${store.userInfo}\n\n内容:\n${content}\n\n上記からNote構成案を作成してください。`;
 
             try {
-                // 第1案：最新のFlashモデル名で試行
-                let response = await callGemini(prompt, "gemini-1.5-flash-latest");
-                
-                // もし「見つからない」エラーなら、第2案：標準的なFlashモデル名で試行
-                if (!response.ok) {
-                    console.log("Retrying with standard name...");
-                    response = await callGemini(prompt, "gemini-1.5-flash");
-                }
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
 
-                // それでもダメなら、第3案：Proモデルで試行
-                if (!response.ok) {
-                    console.log("Retrying with Pro model...");
-                    response = await callGemini(prompt, "gemini-1.5-pro");
+                const data = await res.json();
+                if (data.error) {
+                    // ここで詳細なエラーを出す
+                    throw new Error(`Google Error (${data.error.code}): ${data.error.message}`);
                 }
-
-                const data = await response.json();
-                if (data.error) throw new Error(data.error.message);
 
                 document.getElementById('resultBody').innerText = data.candidates[0].content.parts[0].text;
-                resultContainer.classList.remove('hidden');
-                resultContainer.scrollIntoView({ behavior: 'smooth' });
-                document.getElementById('statusBadge').innerText = "Success";
+                resultContainer.classList.remove('hidden').scrollIntoView({ behavior: 'smooth' });
+                document.getElementById('statusBadge').innerText = "Last Sync: " + new Date().toLocaleTimeString();
                 document.getElementById('statusBadge').className = "text-[9px] font-bold px-2 py-1 rounded bg-green-100 text-green-600 italic";
 
             } catch (e) {
-                alert("最終試行も失敗しました。Google側でモデルが制限されている可能性があります。\nエラー: " + e.message);
+                alert("エラーが発生しました。以下を教えてください：\n" + e.message);
+                document.getElementById('statusBadge').innerText = "Error";
             } finally {
                 loading.classList.add('hidden');
             }
