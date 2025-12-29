@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Note Assistant v63</title>
+    <title>Note Assistant v64</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { theme: { extend: { colors: { note: '#2cb696' } } } }
@@ -11,7 +11,7 @@
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f9fbfb; color: #333; }
         .card { background: white; border-radius: 14px; margin-bottom: 12px; border: 1px solid #eef3f3; box-shadow: 0 4px 12px rgba(44, 182, 150, 0.05); overflow: hidden; }
-        .section-title { font-size: 13px; font-weight: 800; color: #4a5568; padding: 12px 16px; border-bottom: 1px solid #f7fafc; background: #fff; }
+        .section-title { font-size: 13px; font-weight: 800; color: #4a5568; padding: 12px 16px; border-bottom: 1px solid #f7fafc; background: #fff; display: flex; justify-content: space-between; }
         textarea, input { font-size: 16px !important; outline: none; border: 1px solid #e2e8e8; border-radius: 8px; }
         .btn-note { background: #2cb696; color: white; border-radius: 10px; font-weight: 800; transition: 0.2s; }
         .btn-note:active { transform: scale(0.96); opacity: 0.9; }
@@ -21,47 +21,49 @@
 <body class="p-3">
 
     <header class="flex justify-between items-center mb-3 px-1">
-        <h1 class="font-black text-note text-lg italic tracking-tighter">Note Assistant <span class="text-gray-200 text-[8px]">v63</span></h1>
-        <div id="statusBadge" class="text-[9px] font-bold px-2 py-1 rounded bg-gray-100 text-gray-400 italic">Key Required</div>
+        <h1 class="font-black text-note text-lg italic tracking-tighter">Note Assistant <span class="text-gray-200 text-[8px]">v64</span></h1>
+        <div id="statusBadge" class="text-[9px] font-bold px-2 py-1 rounded bg-gray-100 text-gray-400 italic">Checking Key...</div>
     </header>
 
-    <div class="card border-2 border-orange-200">
-        <div class="section-title bg-orange-50 text-orange-700">🔑 API KEY設定（初回のみ）</div>
+    <div class="card border-2 border-orange-200 mb-4">
+        <div class="section-title bg-orange-50 text-orange-700">🔑 API KEY設定</div>
         <div class="p-4 pt-2">
-            <input type="password" id="apiKeyInput" placeholder="AIza... (新しいキーを入力)" class="w-full p-3 text-sm border rounded-xl bg-white mb-2">
-            <button onclick="saveApiKey()" class="w-full bg-orange-500 text-white py-2 rounded-lg font-bold text-sm">キーを保存する</button>
-            <p class="text-[10px] text-gray-400 mt-2">※キーはあなたのスマホ内のみに保存され、Googleに漏洩判定されなくなります。</p>
+            <input type="password" id="apiKeyInput" placeholder="新しいキーを入力" class="w-full p-3 text-sm border rounded-xl bg-white mb-2">
+            <div class="flex gap-2">
+                <button onclick="saveApiKey()" class="flex-1 bg-orange-500 text-white py-2 rounded-lg font-bold text-sm">キーを保存</button>
+                <button onclick="checkModels()" class="flex-1 bg-gray-800 text-white py-2 rounded-lg font-bold text-sm text-[10px]">キーを診断する</button>
+            </div>
         </div>
     </div>
 
     <div class="card">
         <div class="section-title">▼ 文体プロフィール</div>
         <div class="p-4 pt-2">
-            <textarea id="personalInfo" rows="3" placeholder="お手本の文章を貼り付けてください。" class="w-full p-3 text-sm border rounded-xl leading-relaxed bg-gray-50/30 mb-3"></textarea>
+            <textarea id="personalInfo" rows="3" placeholder="お手本の文章を入力してください。" class="w-full p-3 text-sm border rounded-xl leading-relaxed bg-gray-50/30 mb-3"></textarea>
             <button onclick="saveProfile()" class="w-full btn-note py-3 text-sm shadow-lg shadow-note/20">文体を保存</button>
         </div>
     </div>
 
     <div class="card">
-        <div class="bg-note/5 text-[9px] font-black text-note px-4 py-2 border-b border-note/10 uppercase tracking-widest text-center italic">Editor</div>
-        <textarea id="mainContent" rows="8" placeholder="メモからネタを選んで追加してください" class="w-full p-4 text-base border-none resize-none"></textarea>
+        <div class="bg-note/5 text-[9px] font-black text-note px-4 py-2 border-b border-note/10 uppercase text-center italic">Editor</div>
+        <textarea id="mainContent" rows="6" placeholder="内容を入力してください" class="w-full p-4 text-base border-none resize-none"></textarea>
         <div class="p-4 pt-0">
-            <button onclick="generate()" id="btn-gen" class="w-full bg-gray-900 text-white py-5 rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all">
+            <button onclick="generate()" id="btn-gen" class="w-full bg-gray-900 text-white py-5 rounded-2xl font-black text-xl shadow-xl active:scale-95">
                 AI構成案を作成
             </button>
         </div>
     </div>
 
-    <div id="loading" class="hidden text-center py-6 font-bold text-note animate-pulse italic">Connecting to Google AI...</div>
+    <div id="loading" class="hidden text-center py-6 font-bold text-note animate-pulse italic">Connecting...</div>
     <div id="resultContainer" class="hidden card p-5 border-2 border-note bg-white mb-6">
         <div id="resultBody" class="text-base leading-loose whitespace-pre-wrap text-gray-800"></div>
     </div>
 
-    <div class="flex items-center gap-2 mb-2 px-1 font-bold text-gray-400 text-[10px] uppercase tracking-widest">Memo Timeline</div>
+    <div class="flex items-center gap-2 mb-2 px-1 font-bold text-gray-400 text-[10px] uppercase">Memo Timeline</div>
     <div id="timeline" class="card"></div>
 
     <script>
-        const DB_NAME = 'NOTE_PRO_V63_STABLE';
+        const DB_NAME = 'NOTE_PRO_V64_DATA';
         let store = JSON.parse(localStorage.getItem(DB_NAME)) || { tweets: [], userInfo: "", apiKey: "" };
 
         function saveApiKey() {
@@ -70,33 +72,34 @@
             store.apiKey = key;
             save();
             updateStatus();
-            alert("キーを保存しました。これでAIが動くようになります。");
+            alert("保存しました。一度「キーを診断する」を押してください。");
         }
 
         function updateStatus() {
             const badge = document.getElementById('statusBadge');
             if(store.apiKey) {
-                badge.innerText = "Key Loaded";
+                badge.innerText = "Key Registered";
                 badge.className = "text-[9px] font-bold px-2 py-1 rounded bg-green-100 text-green-600 italic";
                 document.getElementById('apiKeyInput').value = store.apiKey;
             }
         }
 
-        function rescue() {
-            const keys = ['NOTE_PRO_V62_STABLE','NOTE_PRO_V61_STABLE', 'NOTE_PRO_V60_STABLE', 'NOTE_PRO_V59_DATA'];
-            keys.forEach(k => {
-                const old = JSON.parse(localStorage.getItem(k));
-                if (old?.tweets) {
-                    old.tweets.forEach(ot => {
-                        const txt = ot.t || ot.text;
-                        if (txt && !store.tweets.some(st => st.t === txt)) {
-                            store.tweets.push({ t: txt, d: ot.d || new Date().toLocaleString() });
-                        }
-                    });
-                }
-                if (!store.userInfo && old?.userInfo) store.userInfo = old.userInfo;
-            });
-            save();
+        async function checkModels() {
+            if(!store.apiKey) return alert("キーを先に入力してください");
+            const btn = document.getElementById('btn-gen');
+            btn.innerText = "診断中...";
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${store.apiKey}`);
+                const data = await res.json();
+                if(data.error) throw new Error(data.error.message);
+                
+                const modelNames = data.models.map(m => m.name.replace('models/', ''));
+                alert("診断成功！\n使用可能なモデルが見つかりました:\n" + modelNames.slice(0, 3).join('\n') + "\n\nこれで「AI構成案を作成」が動くようになります。");
+                btn.innerText = "AI構成案を作成";
+            } catch (e) {
+                alert("診断失敗: " + e.message + "\n\nキーが「Google AI Studio」で正しく作成されているか確認してください。");
+                btn.innerText = "AI構成案を作成";
+            }
         }
 
         function save() { localStorage.setItem(DB_NAME, JSON.stringify(store)); }
@@ -108,43 +111,45 @@
         }
 
         async function generate() {
-            if(!store.apiKey) return alert("先にAPIキーを設定して保存してください");
+            if(!store.apiKey) return alert("APIキーを設定してください");
             const content = document.getElementById('mainContent').value.trim();
             if(!content) return alert("内容を入力してください");
 
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('resultContainer').classList.add('hidden');
 
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${store.apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: `文体お手本:\n${store.userInfo}\n\n内容:\n${content}\n\n上記からNote構成案を作成して。` }] }] })
-                });
+            // 使えるモデルを順に試す
+            const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-1.0-pro"];
+            let success = false;
 
-                const data = await res.json();
-                if (data.error) throw new Error(data.error.message);
-
-                document.getElementById('resultBody').innerText = data.candidates[0].content.parts[0].text;
-                document.getElementById('resultContainer').classList.remove('hidden').scrollIntoView({ behavior: 'smooth' });
-            } catch (e) {
-                alert("エラー: " + e.message + "\n\nキーが正しいか、再度確認してください。");
-            } finally {
-                document.getElementById('loading').classList.add('hidden');
+            for (const model of modelsToTry) {
+                try {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${store.apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: `お手本:\n${store.userInfo}\n内容:\n${content}\n構成案を作って。` }] }] })
+                    });
+                    const data = await res.json();
+                    if (data.candidates) {
+                        document.getElementById('resultBody').innerText = data.candidates[0].content.parts[0].text;
+                        resultContainer.classList.remove('hidden').scrollIntoView({ behavior: 'smooth' });
+                        success = true;
+                        break;
+                    }
+                } catch (e) { console.log(`${model} failed, trying next...`); }
             }
+
+            if(!success) alert("すべてのモデルで試行しましたが失敗しました。キーの権限設定を確認してください。");
+            document.getElementById('loading').classList.add('hidden');
         }
 
         function render() {
             const tl = document.getElementById('timeline');
-            tl.innerHTML = store.tweets.map((t, i) => `
-                <div class="x-post">
-                    <div class="flex justify-between items-center mb-1 text-[9px] text-gray-400 font-mono"><span>${t.d}</span></div>
-                    <p class="text-sm text-gray-700 font-medium">${t.t}</p>
-                </div>
+            tl.innerHTML = store.tweets.map(t => `
+                <div class="x-post"><p class="text-sm text-gray-700">${t.t}</p></div>
             `).join('');
         }
 
-        rescue();
         updateStatus();
         document.getElementById('personalInfo').value = store.userInfo || "";
         render();
