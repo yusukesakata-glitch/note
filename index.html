@@ -91,7 +91,7 @@
             </div>
         </div>
 
-        <!-- 2. AIコンサルタント（新設） -->
+        <!-- 2. AIコンサルタント -->
         <div id="tab-ai" class="hidden">
             <h2 class="text-[11px] font-bold text-gray-400 mb-4 tracking-widest uppercase">AI全体コンサルタント</h2>
             <div class="bg-gray-50 p-4 rounded-2xl mb-4 text-xs text-gray-500 leading-relaxed">
@@ -127,12 +127,12 @@
         <!-- 4. トピック -->
         <div id="tab-topic" class="hidden">
             <h2 class="text-[11px] font-bold text-gray-400 mb-4 tracking-widest uppercase">トピック（情報ストック）</h2>
-            <div class="bg-blue-50/30 p-4 rounded-2xl border border-blue-50 mb-8">
+            <div class="bg-gray-50 p-4 rounded-2xl mb-8">
                 <input type="text" id="topicNameInput" placeholder="トピック名" class="w-full mb-2 p-3 rounded-xl bg-white text-sm outline-none">
                 <textarea id="topicTextInput" rows="3" placeholder="ニュース、記事、URLなど" class="w-full p-3 rounded-xl bg-white text-sm outline-none mb-4"></textarea>
                 <div class="flex gap-2">
-                    <button onclick="saveTopic()" class="btn-green flex-1">ストック</button>
-                    <label class="btn-green bg-blue-900 flex-1 text-center cursor-pointer">
+                    <button onclick="saveTopic()" class="btn-green flex-1">保存</button>
+                    <label class="btn-green bg-gray-800 flex-1 text-center cursor-pointer">
                         ファイル解析
                         <input type="file" accept="image/*,application/pdf" class="hidden" onchange="handleFile(this, 'topic')">
                     </label>
@@ -248,7 +248,9 @@
 
     async function callGemini(contents) {
         if(!store.apiKey) throw new Error("APIキーがありません");
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${store.apiKey}`;
+        // 最新のプレビューモデルを使用
+        const modelName = "gemini-2.5-flash-preview-09-2025";
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${store.apiKey}`;
         const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ contents }) });
         const data = await res.json();
         if(data.error) throw new Error(data.error.message);
@@ -267,7 +269,6 @@
         typing.classList.remove('hidden');
 
         if(isGlobal) {
-            // 全体コンサル用のプロンプト構築
             const context = {
                 profile: store.myProfile,
                 allTopics: store.library.map(l => `${l.name}: ${l.text}`).join('\n---\n'),
@@ -289,7 +290,6 @@
             finally { typing.classList.add('hidden'); }
 
         } else {
-            // 個別下書き用のチャット
             const proj = store.projects.find(p => p.id === store.activeProjectId);
             if(!proj) return;
             const style = store.profiles.find(p => p.id == store.activeProfileId);
@@ -311,7 +311,7 @@
     }
 
     function renderAll() {
-        // 執筆
+        // 執筆: 「改名」を「編集」に変更
         document.getElementById('draftGrid').innerHTML = store.projects.map(p => `
             <div class="py-4 border-b flex justify-between items-center">
                 <div class="flex-1 mr-4">
@@ -321,7 +321,7 @@
                     <div class="text-[9px] text-gray-400 mt-1">${new Date(p.id).toLocaleString()}</div>
                 </div>
                 <div class="flex gap-4">
-                    <button onclick="setEdit('proj-${p.id}')" class="text-note font-bold text-xs">改名</button>
+                    <button onclick="setEdit('proj-'+p.id)" class="text-note font-bold text-xs">編集</button>
                     <button onclick="safeDel('projects', ${p.id})" class="text-red-200 text-xs">削除</button>
                 </div>
             </div>`).join('');
@@ -345,16 +345,16 @@
                 </div>
             </div>`).join('');
 
-        // トピック
+        // トピック: 「ストック」を「保存」に、色をグリーン系に変更
         const groupedTopic = store.library.reduce((acc, l) => { 
             const n = l.name || "未分類"; (acc[n] = acc[n] || []).push(l); return acc; 
         }, {});
         document.getElementById('topicList').innerHTML = Object.keys(groupedTopic).map(name => `
             <div class="mb-6">
-                <h3 class="text-[10px] font-bold text-blue-500 uppercase border-l-2 border-blue-500 pl-2 mb-3">${name}</h3>
+                <h3 class="text-[10px] font-bold text-note uppercase border-l-2 border-note pl-2 mb-3">${name}</h3>
                 <div class="space-y-3">
                     ${groupedTopic[name].map(l => `
-                        <div class="p-4 border border-blue-50 rounded-2xl ${editingId === 'top-'+l.id ? 'edit-card' : ''}">
+                        <div class="bg-gray-50 p-4 rounded-2xl ${editingId === 'top-'+l.id ? 'edit-card' : ''}">
                             ${editingId === 'top-'+l.id ? 
                                 `<textarea id="ed-t-${l.id}" class="w-full text-sm outline-none bg-transparent" rows="3">${l.text}</textarea><div class="flex justify-end gap-2 mt-2"><button onclick="clearEdit()" class="text-xs text-gray-400">中止</button><button onclick="applyEdit(${l.id}, 'library', 'text', 'ed-t-${l.id}')" class="btn-black">保存</button></div>` :
                                 `<p class="text-sm text-gray-700 whitespace-pre-wrap">${l.text}</p>`}
@@ -406,7 +406,15 @@
     function updateAvatar(input) { const r=new FileReader(); r.onload=(e)=>{store.avatar=e.target.result; save();}; r.readAsDataURL(input.files[0]); }
     function toggleProfEdit() { const v=document.getElementById('profView'), e=document.getElementById('profEdit'), b=document.getElementById('profBtn'); if(e.classList.contains('hidden')){ v.classList.add('hidden'); e.classList.remove('hidden'); e.value=store.myProfile; b.innerText="中止"; } else { v.classList.remove('hidden'); e.classList.add('hidden'); b.innerText="編集"; } }
     function finalSaveSettings() { store.myProfile=document.getElementById('profEdit').value; store.apiKey=document.getElementById('apiKeyInput').value.trim(); save(); alert("保存しました"); if(!document.getElementById('profEdit').classList.contains('hidden')) toggleProfEdit(); }
-    function safeDel(type, id) { if(confirm("削除しますか？")) { store[type]=store[type].filter(x=>x.id!=id); save(); } }
+    
+    // 削除機能の安定化
+    function safeDel(type, id) { 
+        if(confirm("本当に削除しますか？")) { 
+            store[type]=store[type].filter(x => String(x.id) !== String(id)); 
+            save(); 
+        } 
+    }
+
     function resetChat(mode) { 
         if(confirm("履歴をリセット？")) {
             if(mode === 'projects') {
