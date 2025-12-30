@@ -3,31 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>note assistant v134</title>
+    <title>note assistant v135</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { theme: { extend: { colors: { note: '#2cb696' } } } }
     </script>
     <style>
-        html, body { height: 100%; margin: 0; padding: 0; background: #ffffff; color: #333; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif; -webkit-font-smoothing: antialiased; }
+        html, body { height: 100%; margin: 0; padding: 0; background: #ffffff; color: #333; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif; -webkit-font-smoothing: antialiased; overflow: hidden; }
         .app-shell { display: flex; flex-direction: column; height: 100dvh; width: 100%; overflow: hidden; }
         .app-header { flex: 0 0 48px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #f2f2f2; background: white; z-index: 100; position: relative; }
-        .app-main { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px 16px 160px 16px; background: #fff; }
+        .app-main { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px 16px 140px 16px; background: #fff; position: relative; }
 
+        /* ボトムナビ */
         .bottom-nav { flex: 0 0 auto; height: calc(56px + env(safe-area-inset-bottom)); background: white; border-top: 1px solid #e6e6e6; display: flex; justify-content: space-around; align-items: flex-start; padding-top: 8px; padding-bottom: env(safe-area-inset-bottom); z-index: 1000; }
         .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #888; flex: 1; border: none; background: none; outline: none; }
         .nav-item.active { color: #2cb696; }
         .nav-icon { width: 20px; height: 20px; margin-bottom: 2px; }
         .nav-label { font-size: 9px; font-weight: bold; }
 
+        /* 共通パーツ */
         .btn-green { background: #2cb696; color: white; border-radius: 999px; font-weight: bold; padding: 8px 18px; font-size: 13px; transition: opacity 0.2s; }
         .btn-green:active { opacity: 0.7; }
         .btn-black { background: #333; color: white; border-radius: 6px; font-weight: bold; padding: 4px 12px; font-size: 11px; }
 
-        .chat-bubble { font-size: 15px; padding: 12px 16px; border-radius: 18px; margin-bottom: 16px; max-width: 90%; line-height: 1.6; }
+        /* チャット */
+        .chat-bubble { font-size: 15px; padding: 12px 16px; border-radius: 18px; margin-bottom: 16px; max-width: 90%; line-height: 1.6; word-break: break-word; }
         .msg-ai { background: #f0f2f5; color: #333; align-self: flex-start; border-bottom-left-radius: 4px; }
         .msg-user { background: #2cb696; color: white; align-self: flex-end; margin-left: auto; border-bottom-right-radius: 4px; }
 
+        /* 入力バー */
         .input-bar { 
             position: fixed; bottom: calc(65px + env(safe-area-inset-bottom)); 
             left: 12px; right: 12px; background: white; 
@@ -36,14 +40,20 @@
             box-shadow: 0 4px 16px rgba(0,0,0,0.1); border: 1px solid #eee; z-index: 500; 
         }
         .input-bar textarea { flex: 1; border: none; outline: none; font-size: 15px; padding: 6px 0; background: transparent; max-height: 100px; resize: none; }
-        .input-bar button { color: #2cb696; font-weight: 800; font-size: 14px; padding: 4px; }
+        .input-bar button { color: #2cb696; font-weight: 800; font-size: 14px; padding: 4px; border: none; background: none; }
 
         .edit-card { border: 2px solid #2cb696 !important; background: #fff !important; }
         .loading-pulse { animation: pulse 1.5s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* メッセージ表示用トースト */
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 8px 20px; border-radius: 999px; font-size: 12px; z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        #toast.show { opacity: 1; }
     </style>
 </head>
 <body>
+
+<div id="toast"></div>
 
 <div class="app-shell">
     <header class="app-header">
@@ -91,7 +101,7 @@
         <div id="tab-ai" class="hidden">
             <h2 class="text-[11px] font-bold text-gray-400 mb-4 tracking-widest uppercase">AI全体コンサルタント</h2>
             <div class="bg-gray-50 p-4 rounded-2xl mb-4 text-xs text-gray-500 leading-relaxed">
-                文体、トピック、プロフィール、すべての下書きを参照して、アドバイスを行います。
+                文体、トピック、プロフィール、すべての下書きを参照して、全体的なアドバイスを行います。
             </div>
             <div id="globalChat" class="flex flex-col pb-24"></div>
             <div id="globalTyping" class="hidden text-center text-note text-[10px] font-bold py-4 loading-pulse uppercase">ANALYZING...</div>
@@ -123,7 +133,7 @@
         <!-- 4. トピック -->
         <div id="tab-topic" class="hidden">
             <h2 class="text-[11px] font-bold text-gray-400 mb-4 tracking-widest uppercase">トピック（情報ストック）</h2>
-            <div class="bg-gray-50 p-4 rounded-2xl mb-8">
+            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 mb-8">
                 <input type="text" id="topicNameInput" placeholder="トピック名" class="w-full mb-2 p-3 rounded-xl bg-white text-sm outline-none">
                 <textarea id="topicTextInput" rows="3" placeholder="ニュース、記事、URLなど" class="w-full p-3 rounded-xl bg-white text-sm outline-none mb-4"></textarea>
                 <div class="flex gap-2">
@@ -217,6 +227,14 @@
     let editingId = null;
     let tempMemoImg = "";
 
+    // ユーティリティ: トースト表示
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
     function init() {
         try {
             const saved = localStorage.getItem(DB_KEY);
@@ -242,26 +260,32 @@
     function setEdit(id) { editingId = id; renderAll(); }
     function clearEdit() { editingId = null; renderAll(); }
 
-    // 指数バックオフ付きのリクエスト
-    async function callGemini(contents, maxRetries = 5) {
-        if(!store.apiKey) throw new Error("APIキーがありません");
+    // Gemini API 呼び出し (リトライロジック + システム指示対応)
+    async function callGemini(contents, systemPrompt = "", maxRetries = 5) {
+        if(!store.apiKey) throw new Error("APIキーが設定されていません。設定タブで入力してください。");
+        const apiKey = store.apiKey;
         const modelName = "gemini-2.5-flash-preview-09-2025";
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${store.apiKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
         
+        const payload = { contents };
+        if (systemPrompt) {
+            payload.systemInstruction = { parts: [{ text: systemPrompt }] };
+        }
+
         for (let i = 0; i < maxRetries; i++) {
             try {
                 const res = await fetch(url, { 
-                    method:'POST', 
-                    headers:{'Content-Type':'application/json'}, 
-                    body:JSON.stringify({ contents }) 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(payload) 
                 });
                 const data = await res.json();
                 if(data.error) throw new Error(data.error.message);
                 return data;
             } catch (e) {
                 if (i === maxRetries - 1) throw e;
-                const delay = Math.pow(2, i) * 1000;
-                await new Promise(r => setTimeout(r, delay));
+                const delays = [1000, 2000, 4000, 8000, 16000];
+                await new Promise(r => setTimeout(r, delays[i]));
             }
         }
     }
@@ -280,46 +304,69 @@
         let chatArr = isGlobal ? store.globalChat : store.projects.find(p => p.id === store.activeProjectId)?.chatHistory;
         if(!chatArr) { typing.classList.add('hidden'); return; }
 
-        // 履歴の最後にuserが連続するのを防ぐ
-        if (chatArr.length > 0 && chatArr[chatArr.length-1].role === 'user') {
-            chatArr.pop();
+        // 背景・文体などのシステムプロンプト構築
+        const topicsStr = store.library.slice(0,10).map(l => `・${l.name}: ${l.text}`).join('\n');
+        const style = store.profiles.find(p => p.id == store.activeProfileId);
+        
+        let systemPrompt = "";
+        if (isGlobal) {
+            systemPrompt = `あなたはnote執筆の全体コンサルタントです。
+[ユーザープロフィール]
+${store.myProfile || "未設定"}
+[ストックされたトピック]
+${topicsStr || "なし"}
+[現在の下書きリスト]
+${store.projects.map(p => p.title).join(", ")}
+ユーザーの相談に対し、これら全ての情報を踏まえて戦略的なアドバイスを行ってください。`;
+        } else {
+            const proj = store.projects.find(p => p.id === store.activeProjectId);
+            systemPrompt = `あなたはnote記事の執筆パートナーです。
+[ユーザープロフィール]
+${store.myProfile || "未設定"}
+[参考トピック]
+${topicsStr || "なし"}
+[採用する文体お手本]
+${style ? style.text : "標準的なトーン"}
+[現在の本文状況]
+${proj?.content || "書き始め"}
+ユーザーの指示に従い、記事の構成案、執筆、リライトの提案を行ってください。`;
         }
 
-        const context = isGlobal ? {
-            role: "user", parts: [{ text: `[全体コンサル]\nプロフィール:${store.myProfile}\nトピック:${store.library.map(l => l.text).join(",")}\n現在の下書き:${store.projects.map(p => p.title).join(",")}\n\n相談:${text}` }]
-        } : {
-            role: "user", parts: [{ text: `[記事作成]\n指示:${text}\n参考文体:${store.profiles.find(p => p.id == store.activeProfileId)?.text || "なし"}` }]
-        };
+        // Gemini APIは履歴の最後がmodelである必要があるため調整
+        if (chatArr.length > 0 && chatArr[chatArr.length - 1].role === 'user') {
+            chatArr.pop(); 
+        }
 
-        chatArr.push(context);
+        chatArr.push({ role: "user", parts: [{ text: text }] });
         isGlobal ? renderGlobalChat() : renderChat();
 
         try {
-            const data = await callGemini(chatArr.map(m => ({ role: m.role, parts: m.parts })));
+            const data = await callGemini(chatArr.map(m => ({ role: m.role, parts: m.parts })), systemPrompt);
             if(data.candidates?.[0]?.content) {
-                chatArr.push({ role: "model", parts: [{ text: data.candidates[0].content.parts[0].text }] });
+                const aiMsg = data.candidates[0].content.parts[0].text;
+                chatArr.push({ role: "model", parts: [{ text: aiMsg }] });
                 save();
                 isGlobal ? renderGlobalChat() : renderChat();
             }
         } catch(e) { 
-            alert("AIエラー: " + e.message); 
-            chatArr.pop(); // 失敗したユーザー入力を除去
+            showToast("エラー: " + e.message);
+            chatArr.pop(); // 失敗した入力を削除
         } finally { 
             typing.classList.add('hidden'); 
         }
     }
 
     function renderAll() {
-        // 下書き
+        // 下書き一覧
         document.getElementById('draftGrid').innerHTML = store.projects.map(p => `
-            <div class="py-4 border-b flex justify-between items-center">
-                <div class="flex-1 mr-4">
+            <div class="py-4 border-b flex justify-between items-center" onclick="openDraft(${p.id})">
+                <div class="flex-1 mr-4 overflow-hidden">
                     ${editingId === 'proj-'+p.id ? 
-                        `<div class="flex gap-2"><input id="ed-p-${p.id}" class="flex-1 border-2 border-note rounded-lg p-2 text-sm outline-none" value="${p.title}"><button onclick="applyEdit(${p.id}, 'projects', 'title', 'ed-p-${p.id}')" class="btn-black">保存</button></div>` :
-                        `<div onclick="openDraft(${p.id})" class="font-bold text-[15px] cursor-pointer">${p.title}</div>`}
-                    <div class="text-[9px] text-gray-400 mt-1">${new Date(p.id).toLocaleString()}</div>
+                        `<div class="flex gap-2" onclick="event.stopPropagation()"><input id="ed-p-${p.id}" class="flex-1 border-2 border-note rounded-lg p-2 text-sm outline-none" value="${p.title}"><button onclick="applyEdit(${p.id}, 'projects', 'title', 'ed-p-${p.id}')" class="btn-black">保存</button></div>` :
+                        `<div class="font-bold text-[15px] truncate">${p.title}</div>`}
+                    <div class="text-[9px] text-gray-400 mt-1">${new Date(p.id).toLocaleString()} 更新</div>
                 </div>
-                <div class="flex gap-4">
+                <div class="flex gap-4 flex-shrink-0">
                     <button onclick="event.stopPropagation(); setEdit('proj-${p.id}')" class="text-note font-bold text-xs">編集</button>
                     <button onclick="event.stopPropagation(); safeDel('projects', ${p.id})" class="text-red-200 text-xs">削除</button>
                 </div>
@@ -380,7 +427,7 @@
             </div>`).join('');
 
         document.getElementById('avatarImg').src = store.avatar || "https://via.placeholder.com/100";
-        document.getElementById('profView').innerText = store.myProfile || "未設定";
+        document.getElementById('profView').innerText = store.myProfile || "プロフィール未設定";
         document.getElementById('apiKeyInput').value = store.apiKey || "";
 
         const sel = document.getElementById('editorStyleSelect');
@@ -393,10 +440,11 @@
     function applyEdit(id, type, field, inputId) { 
         const val = document.getElementById(inputId).value; 
         const item = store[type].find(x => String(x.id) === String(id)); 
-        if(item) item[field] = val; 
+        if(item) { item[field] = val; showToast("更新しました"); }
         clearEdit(); 
         save(); 
     }
+    
     function safeDel(type, id) { 
         if(confirm("本当に削除しますか？")) { 
             store[type] = store[type].filter(x => String(x.id) !== String(id)); 
@@ -408,29 +456,47 @@
     function openDraft(id) { store.activeProjectId=id; document.getElementById('home-list').classList.add('hidden'); document.getElementById('home-editor').classList.remove('hidden'); const p=store.projects.find(x=>x.id===id); document.getElementById('editorBody').value=p.content||""; renderChat(); }
     function closeDraft() { store.activeProjectId=null; document.getElementById('home-list').classList.remove('hidden'); document.getElementById('home-editor').classList.add('hidden'); renderAll(); }
     function syncBody() { const p=store.projects.find(x=>x.id===store.activeProjectId); if(p){ p.content=document.getElementById('editorBody').value; localStorage.setItem(DB_KEY, JSON.stringify(store)); } }
-    function saveStyle() { const n=document.getElementById('styleNameInput').value.trim(), t=document.getElementById('styleTextInput').value.trim(); if(n&&t){ store.profiles.unshift({id:Date.now(), name:n, text:t}); document.getElementById('styleNameInput').value=""; document.getElementById('styleTextInput').value=""; save(); } }
-    function saveTopic() { const n=document.getElementById('topicNameInput').value.trim() || "未分類", t=document.getElementById('topicTextInput').value.trim(); if(t){ store.library.unshift({id:Date.now(), name:n, text:t}); document.getElementById('topicNameInput').value=""; document.getElementById('topicTextInput').value=""; save(); } }
+    function saveStyle() { const n=document.getElementById('styleNameInput').value.trim(), t=document.getElementById('styleTextInput').value.trim(); if(n&&t){ store.profiles.unshift({id:Date.now(), name:n, text:t}); document.getElementById('styleNameInput').value=""; document.getElementById('styleTextInput').value=""; save(); showToast("保存しました"); } }
+    function saveTopic() { const n=document.getElementById('topicNameInput').value.trim() || "未分類", t=document.getElementById('topicTextInput').value.trim(); if(t){ store.library.unshift({id:Date.now(), name:n, text:t}); document.getElementById('topicNameInput').value=""; document.getElementById('topicTextInput').value=""; save(); showToast("保存しました"); } }
     function previewMemo(input) { const r=new FileReader(); r.onload=(e)=>{tempMemoImg=e.target.result; document.getElementById('memoImg').src=tempMemoImg; document.getElementById('memoPreviewArea').classList.remove('hidden');}; r.readAsDataURL(input.files[0]); }
     function clearMemoImg() { tempMemoImg=""; document.getElementById('memoPreviewArea').classList.add('hidden'); }
     function saveMemo() { const v=document.getElementById('memoInput').value.trim(); if(v||tempMemoImg){ store.memos.unshift({id:Date.now(), text:v, image:tempMemoImg}); document.getElementById('memoInput').value=""; clearMemoImg(); save(); } }
     function updateAvatar(input) { const r=new FileReader(); r.onload=(e)=>{store.avatar=e.target.result; save();}; r.readAsDataURL(input.files[0]); }
     function toggleProfEdit() { const v=document.getElementById('profView'), e=document.getElementById('profEdit'), b=document.getElementById('profBtn'); if(e.classList.contains('hidden')){ v.classList.add('hidden'); e.classList.remove('hidden'); e.value=store.myProfile; b.innerText="中止"; } else { v.classList.remove('hidden'); e.classList.add('hidden'); b.innerText="編集"; } }
-    function finalSaveSettings() { store.myProfile=document.getElementById('profEdit').value; store.apiKey=document.getElementById('apiKeyInput').value.trim(); save(); alert("保存しました"); if(!document.getElementById('profEdit').classList.contains('hidden')) toggleProfEdit(); }
-    function resetChat(mode) { if(confirm("履歴をリセット？")) { if(mode === 'projects') { const p=store.projects.find(x=>x.id===store.activeProjectId); if(p) p.chatHistory=[]; } else { store.globalChat = []; } save(); } }
+    function finalSaveSettings() { store.myProfile=document.getElementById('profEdit').value; store.apiKey=document.getElementById('apiKeyInput').value.trim(); save(); showToast("保存しました"); if(!document.getElementById('profEdit').classList.contains('hidden')) toggleProfEdit(); }
+    function resetChat(mode) { if(confirm("履歴をリセットしますか？")) { if(mode === 'projects') { const p=store.projects.find(x=>x.id===store.activeProjectId); if(p) p.chatHistory=[]; } else { store.globalChat = []; } save(); } }
     function updateActiveStyle() { store.activeProfileId = document.getElementById('editorStyleSelect').value; save(); }
     function autoGrow(el) { el.style.height = "auto"; el.style.height = el.scrollHeight + "px"; }
+
+    // ファイル解析 (inlineData対応)
     async function handleFile(input, type) { 
-        const file=input.files[0]; if(!file||!store.apiKey)return; 
+        const file=input.files[0]; if(!file||!store.apiKey) return showToast("APIキーが未設定です"); 
         const loadingId = type === 'style' ? 'styleLoading' : 'topicLoading';
         document.getElementById(loadingId).classList.remove('hidden');
-        const r=new FileReader(); r.onload=async(e)=>{ try { 
-            const b64=e.target.result.split(',')[1]; 
-            const data=await callGemini([{parts:[{text:"文章を正確に書き起こして。"},{inline_data:{mime_type:file.type,data:b64}}]}]); 
-            const text = data.candidates[0].content.parts[0].text;
-            if(type === 'style') document.getElementById('styleTextInput').value = text;
-            else document.getElementById('topicTextInput').value = text;
-        } catch(e){alert("解析エラー");} finally{document.getElementById(loadingId).classList.add('hidden');} }; r.readAsDataURL(file);
+        const r=new FileReader(); r.onload=async(e)=>{ 
+            try { 
+                const b64=e.target.result.split(',')[1]; 
+                const payload = [{
+                    role: "user",
+                    parts: [
+                        { text: "このファイルの内容を正確に読み取り、要約せずに全ての文章を書き起こしてください。" },
+                        { inlineData: { mimeType: file.type, data: b64 } }
+                    ]
+                }];
+                const data = await callGemini(payload); 
+                const text = data.candidates[0].content.parts[0].text;
+                if(type === 'style') document.getElementById('styleTextInput').value = text;
+                else document.getElementById('topicTextInput').value = text;
+                showToast("解析が完了しました");
+            } catch(e){
+                showToast("解析エラー: " + e.message);
+            } finally {
+                document.getElementById(loadingId).classList.add('hidden');
+                input.value = "";
+            } 
+        }; r.readAsDataURL(file);
     }
+
     function renderChat() {
         const proj = store.projects.find(p => p.id === store.activeProjectId);
         const area = document.getElementById('editorChat'); if(!proj || !area) return;
@@ -439,7 +505,7 @@
     }
     function renderGlobalChat() {
         const area = document.getElementById('globalChat'); if(!area) return;
-        area.innerHTML = store.globalChat.map(msg => `<div class="chat-bubble ${msg.role==='model'?'msg-ai':'msg-user'}">${msg.parts[0].text}</div>`).join('') + (store.globalChat.length > 0 ? `<div class="text-center pb-4"><button onclick="resetChat('global')" class="text-red-300 text-[10px] font-bold">履歴をリセット</button></div>` : '');
+        area.innerHTML = store.globalChat.map(msg => `<div class="chat-bubble ${msg.role==='model'?'msg-ai':'msg-user'}">${msg.parts[0].text}</div>`).join('') + (store.globalChat.length > 0 ? `<div class="text-center pb-4 pt-4"><button onclick="resetChat('global')" class="text-red-300 text-[10px] font-bold">コンサル履歴をリセット</button></div>` : '');
         setTimeout(() => area.lastElementChild?.scrollIntoView({ behavior: 'smooth' }), 50);
     }
 
