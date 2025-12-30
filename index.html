@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>note assistant v135</title>
+    <title>note assistant v136</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { theme: { extend: { colors: { note: '#2cb696' } } } }
@@ -22,8 +22,9 @@
         .nav-label { font-size: 9px; font-weight: bold; }
 
         /* 共通パーツ */
-        .btn-green { background: #2cb696; color: white; border-radius: 999px; font-weight: bold; padding: 8px 18px; font-size: 13px; transition: opacity 0.2s; }
+        .btn-green { background: #2cb696; color: white; border-radius: 999px; font-weight: bold; padding: 8px 18px; font-size: 13px; transition: opacity 0.2s; border: none; cursor: pointer; }
         .btn-green:active { opacity: 0.7; }
+        .btn-green:disabled { background: #ccc; cursor: not-allowed; }
         .btn-black { background: #333; color: white; border-radius: 6px; font-weight: bold; padding: 4px 12px; font-size: 11px; }
 
         /* チャット */
@@ -41,12 +42,12 @@
         }
         .input-bar textarea { flex: 1; border: none; outline: none; font-size: 15px; padding: 6px 0; background: transparent; max-height: 100px; resize: none; }
         .input-bar button { color: #2cb696; font-weight: 800; font-size: 14px; padding: 4px; border: none; background: none; }
+        .input-bar button:disabled { color: #ccc; }
 
         .edit-card { border: 2px solid #2cb696 !important; background: #fff !important; }
         .loading-pulse { animation: pulse 1.5s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-        /* メッセージ表示用トースト */
         #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 8px 20px; border-radius: 999px; font-size: 12px; z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
         #toast.show { opacity: 1; }
     </style>
@@ -61,7 +62,6 @@
     </header>
 
     <div class="app-main" id="scrollArea">
-        <!-- 1. 執筆 -->
         <div id="tab-home">
             <div id="home-list">
                 <div class="mb-8">
@@ -77,7 +77,7 @@
 
             <div id="home-editor" class="hidden">
                 <div class="sticky top-[-16px] bg-white py-2 z-10 flex justify-between items-center mb-4 border-b">
-                    <button onclick="closeDraft()" class="text-note font-bold text-sm">← 一覧に戻る</button>
+                    <button onclick="closeDraft()" class="text-note font-bold text-sm">一覧に戻る</button>
                     <button onclick="resetChat('projects')" class="text-red-300 text-[11px]">履歴クリア</button>
                 </div>
                 <div class="mb-4">
@@ -85,19 +85,18 @@
                         <span class="text-[11px] font-bold text-gray-400 uppercase">本文作成</span>
                         <select id="editorStyleSelect" onchange="updateActiveStyle()" class="text-[11px] bg-gray-50 px-2 py-1 rounded outline-none font-bold text-note"></select>
                     </div>
-                    <textarea id="editorBody" rows="8" class="w-full text-sm leading-relaxed p-4 bg-gray-50 rounded-2xl outline-none" placeholder="本文をここに書き溜めます..." oninput="syncBody()"></textarea>
+                    <textarea id="editorBody" rows="12" class="w-full text-sm leading-relaxed p-4 bg-gray-50 rounded-2xl outline-none" placeholder="本文をここに書き溜めます..." oninput="syncBody()"></textarea>
                 </div>
                 <div id="editorChat" class="flex flex-col pb-24"></div>
                 <div id="editorTyping" class="hidden text-center text-note text-[10px] font-bold py-4 loading-pulse uppercase">AI THINKING...</div>
                 
                 <div class="input-bar">
                     <textarea id="chatInput" rows="1" placeholder="AIに指示を出す..." oninput="autoGrow(this)"></textarea>
-                    <button onclick="sendMessage('project')">送信</button>
+                    <button id="chatSendBtn" onclick="sendMessage('project')">送信</button>
                 </div>
             </div>
         </div>
 
-        <!-- 2. AIコンサルタント -->
         <div id="tab-ai" class="hidden">
             <h2 class="text-[11px] font-bold text-gray-400 mb-4 tracking-widest uppercase">AI全体コンサルタント</h2>
             <div class="bg-gray-50 p-4 rounded-2xl mb-4 text-xs text-gray-500 leading-relaxed">
@@ -108,11 +107,10 @@
             
             <div class="input-bar">
                 <textarea id="globalChatInput" rows="1" placeholder="全体的な相談..." oninput="autoGrow(this)"></textarea>
-                <button onclick="sendMessage('global')">送信</button>
+                <button id="globalSendBtn" onclick="sendMessage('global')">送信</button>
             </div>
         </div>
 
-        <!-- 3. 文体 -->
         <div id="tab-style" class="hidden">
             <h2 class="text-[11px] font-bold text-gray-400 mb-4 tracking-widest uppercase">文体お手本</h2>
             <div class="bg-gray-50 p-4 rounded-2xl mb-8">
@@ -130,9 +128,8 @@
             <div id="styleList" class="space-y-6"></div>
         </div>
 
-        <!-- 4. トピック -->
         <div id="tab-topic" class="hidden">
-            <h2 class="text-[11px] font-bold text-gray-400 mb-4 tracking-widest uppercase">トピック（情報ストック）</h2>
+            <h2 class="text-[11px] font-bold text-gray-400 mb-4 tracking-widest uppercase">トピック</h2>
             <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 mb-8">
                 <input type="text" id="topicNameInput" placeholder="トピック名" class="w-full mb-2 p-3 rounded-xl bg-white text-sm outline-none">
                 <textarea id="topicTextInput" rows="3" placeholder="ニュース、記事、URLなど" class="w-full p-3 rounded-xl bg-white text-sm outline-none mb-4"></textarea>
@@ -148,7 +145,6 @@
             <div id="topicList" class="space-y-6"></div>
         </div>
 
-        <!-- 5. メモ -->
         <div id="tab-memo" class="hidden">
             <h2 class="text-[11px] font-bold text-gray-400 mb-4 tracking-widest uppercase">タイムラインメモ</h2>
             <div class="bg-white border p-4 rounded-2xl mb-8 shadow-sm">
@@ -168,7 +164,6 @@
             <div id="memoList" class="space-y-6"></div>
         </div>
 
-        <!-- 6. アカウント -->
         <div id="tab-account" class="hidden">
             <div class="flex flex-col items-center py-8">
                 <div class="relative mb-4">
@@ -192,7 +187,6 @@
         </div>
     </div>
 
-    <!-- ボトムナビ -->
     <nav class="bottom-nav">
         <button onclick="switchTab('home')" id="nav-home" class="nav-item active">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
@@ -227,7 +221,6 @@
     let editingId = null;
     let tempMemoImg = "";
 
-    // ユーティリティ: トースト表示
     function showToast(msg) {
         const t = document.getElementById('toast');
         t.innerText = msg;
@@ -260,11 +253,10 @@
     function setEdit(id) { editingId = id; renderAll(); }
     function clearEdit() { editingId = null; renderAll(); }
 
-    // Gemini API 呼び出し (リトライロジック + システム指示対応)
-    async function callGemini(contents, systemPrompt = "", maxRetries = 5) {
-        if(!store.apiKey) throw new Error("APIキーが設定されていません。設定タブで入力してください。");
+    async function callGemini(contents, systemPrompt = "", maxRetries = 3) {
+        if(!store.apiKey) throw new Error("APIキーを設定してください");
         const apiKey = store.apiKey;
-        const modelName = "gemini-2.5-flash-preview-09-2025";
+        const modelName = "gemini-2.0-flash-exp"; // 修正：最新の有効なモデル名
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
         
         const payload = { contents };
@@ -284,8 +276,7 @@
                 return data;
             } catch (e) {
                 if (i === maxRetries - 1) throw e;
-                const delays = [1000, 2000, 4000, 8000, 16000];
-                await new Promise(r => setTimeout(r, delays[i]));
+                await new Promise(r => setTimeout(r, 1000 * (i + 1)));
             }
         }
     }
@@ -294,54 +285,37 @@
         const isGlobal = mode === 'global';
         const inputId = isGlobal ? 'globalChatInput' : 'chatInput';
         const typingId = isGlobal ? 'globalTyping' : 'editorTyping';
+        const btnId = isGlobal ? 'globalSendBtn' : 'chatSendBtn';
+        
         const input = document.getElementById(inputId);
+        const sendBtn = document.getElementById(btnId);
         const text = input.value.trim(); if(!text) return;
         
+        // UIロック
         input.value = ""; input.style.height = "auto";
-        const typing = document.getElementById(typingId);
-        typing.classList.remove('hidden');
+        input.disabled = true;
+        sendBtn.disabled = true;
+        document.getElementById(typingId).classList.remove('hidden');
 
         let chatArr = isGlobal ? store.globalChat : store.projects.find(p => p.id === store.activeProjectId)?.chatHistory;
-        if(!chatArr) { typing.classList.add('hidden'); return; }
+        if(!chatArr) return;
 
-        // 背景・文体などのシステムプロンプト構築
         const topicsStr = store.library.slice(0,10).map(l => `・${l.name}: ${l.text}`).join('\n');
         const style = store.profiles.find(p => p.id == store.activeProfileId);
         
         let systemPrompt = "";
         if (isGlobal) {
-            systemPrompt = `あなたはnote執筆の全体コンサルタントです。
-[ユーザープロフィール]
-${store.myProfile || "未設定"}
-[ストックされたトピック]
-${topicsStr || "なし"}
-[現在の下書きリスト]
-${store.projects.map(p => p.title).join(", ")}
-ユーザーの相談に対し、これら全ての情報を踏まえて戦略的なアドバイスを行ってください。`;
+            systemPrompt = `あなたはnote執筆の全体コンサルタントです。\n[プロフィール]\n${store.myProfile}\n[トピック]\n${topicsStr}\n[下書き]\n${store.projects.map(p => p.title).join(", ")}`;
         } else {
             const proj = store.projects.find(p => p.id === store.activeProjectId);
-            systemPrompt = `あなたはnote記事の執筆パートナーです。
-[ユーザープロフィール]
-${store.myProfile || "未設定"}
-[参考トピック]
-${topicsStr || "なし"}
-[採用する文体お手本]
-${style ? style.text : "標準的なトーン"}
-[現在の本文状況]
-${proj?.content || "書き始め"}
-ユーザーの指示に従い、記事の構成案、執筆、リライトの提案を行ってください。`;
-        }
-
-        // Gemini APIは履歴の最後がmodelである必要があるため調整
-        if (chatArr.length > 0 && chatArr[chatArr.length - 1].role === 'user') {
-            chatArr.pop(); 
+            systemPrompt = `あなたはnote執筆パートナーです。\n[プロフィール]\n${store.myProfile}\n[文体]\n${style ? style.text : "標準"}\n[現在の本文]\n${proj?.content}`;
         }
 
         chatArr.push({ role: "user", parts: [{ text: text }] });
         isGlobal ? renderGlobalChat() : renderChat();
 
         try {
-            const data = await callGemini(chatArr.map(m => ({ role: m.role, parts: m.parts })), systemPrompt);
+            const data = await callGemini(chatArr, systemPrompt);
             if(data.candidates?.[0]?.content) {
                 const aiMsg = data.candidates[0].content.parts[0].text;
                 chatArr.push({ role: "model", parts: [{ text: aiMsg }] });
@@ -350,10 +324,30 @@ ${proj?.content || "書き始め"}
             }
         } catch(e) { 
             showToast("エラー: " + e.message);
-            chatArr.pop(); // 失敗した入力を削除
         } finally { 
-            typing.classList.add('hidden'); 
+            input.disabled = false;
+            sendBtn.disabled = false;
+            document.getElementById(typingId).classList.add('hidden'); 
+            input.focus();
         }
+    }
+
+    // 改善：ストック情報を本文に挿入する機能
+    function citeToBody(text) {
+        if(!store.activeProjectId) {
+            showToast("下書きを開いてから引用してください");
+            switchTab('home');
+            return;
+        }
+        const editor = document.getElementById('editorBody');
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        const currentText = editor.value;
+        const newText = currentText.substring(0, start) + "\n" + text + "\n" + currentText.substring(end);
+        editor.value = newText;
+        syncBody();
+        showToast("本文に挿入しました");
+        switchTab('home');
     }
 
     function renderAll() {
@@ -364,9 +358,9 @@ ${proj?.content || "書き始め"}
                     ${editingId === 'proj-'+p.id ? 
                         `<div class="flex gap-2" onclick="event.stopPropagation()"><input id="ed-p-${p.id}" class="flex-1 border-2 border-note rounded-lg p-2 text-sm outline-none" value="${p.title}"><button onclick="applyEdit(${p.id}, 'projects', 'title', 'ed-p-${p.id}')" class="btn-black">保存</button></div>` :
                         `<div class="font-bold text-[15px] truncate">${p.title}</div>`}
-                    <div class="text-[9px] text-gray-400 mt-1">${new Date(p.id).toLocaleString()} 更新</div>
+                    <div class="text-[9px] text-gray-400 mt-1">${new Date(p.id).toLocaleString()}</div>
                 </div>
-                <div class="flex gap-4 flex-shrink-0">
+                <div class="flex gap-4">
                     <button onclick="event.stopPropagation(); setEdit('proj-${p.id}')" class="text-note font-bold text-xs">編集</button>
                     <button onclick="event.stopPropagation(); safeDel('projects', ${p.id})" class="text-red-200 text-xs">削除</button>
                 </div>
@@ -377,18 +371,14 @@ ${proj?.content || "書き始め"}
         document.getElementById('styleList').innerHTML = Object.keys(gStyle).map(name => `
             <div class="mb-6">
                 <h3 class="text-[10px] font-bold text-note uppercase border-l-2 border-note pl-2 mb-3">${name}</h3>
-                <div class="space-y-3">
-                    ${gStyle[name].map(p => `
-                        <div class="bg-gray-50 p-4 rounded-2xl ${editingId === 'sty-'+p.id ? 'edit-card' : ''}">
-                            ${editingId === 'sty-'+p.id ? 
-                                `<textarea id="ed-s-${p.id}" class="w-full p-2 text-xs rounded border outline-none mb-2" rows="4">${p.text}</textarea><div class="flex justify-end gap-2"><button onclick="clearEdit()" class="text-xs text-gray-400">中止</button><button onclick="applyEdit(${p.id}, 'profiles', 'text', 'ed-s-${p.id}')" class="btn-black">保存</button></div>` :
-                                `<p class="text-[11px] text-gray-500 leading-relaxed line-clamp-3">${p.text}</p>`}
-                            <div class="flex justify-end gap-4 mt-2">
-                                <button onclick="setEdit('sty-${p.id}')" class="text-note font-bold text-[11px]">編集</button>
-                                <button onclick="safeDel('profiles', ${p.id})" class="text-red-200 text-[11px]">削除</button>
-                            </div>
-                        </div>`).join('')}
-                </div>
+                ${gStyle[name].map(p => `
+                    <div class="bg-gray-50 p-4 rounded-2xl mb-2">
+                        <p class="text-[11px] text-gray-500 line-clamp-3 mb-2">${p.text}</p>
+                        <div class="flex justify-end gap-3">
+                            <button onclick="citeToBody('${p.text.replace(/'/g, "\\'")}')" class="text-note font-bold text-[11px]">本文に挿入</button>
+                            <button onclick="safeDel('profiles', ${p.id})" class="text-red-200 text-[11px]">削除</button>
+                        </div>
+                    </div>`).join('')}
             </div>`).join('');
 
         // トピック
@@ -396,43 +386,35 @@ ${proj?.content || "書き始め"}
         document.getElementById('topicList').innerHTML = Object.keys(gTopic).map(name => `
             <div class="mb-6">
                 <h3 class="text-[10px] font-bold text-note uppercase border-l-2 border-note pl-2 mb-3">${name}</h3>
-                <div class="space-y-3">
-                    ${gTopic[name].map(l => `
-                        <div class="bg-gray-50 p-4 rounded-2xl ${editingId === 'top-'+l.id ? 'edit-card' : ''}">
-                            ${editingId === 'top-'+l.id ? 
-                                `<textarea id="ed-t-${l.id}" class="w-full text-sm outline-none bg-transparent" rows="3">${l.text}</textarea><div class="flex justify-end gap-2 mt-2"><button onclick="clearEdit()" class="text-xs text-gray-400">中止</button><button onclick="applyEdit(${l.id}, 'library', 'text', 'ed-t-${l.id}')" class="btn-black">保存</button></div>` :
-                                `<p class="text-sm text-gray-700 whitespace-pre-wrap">${l.text}</p>`}
-                            <div class="flex justify-end gap-4 mt-3">
-                                <button onclick="setEdit('top-'+l.id)" class="text-note font-bold text-[11px]">編集</button>
-                                <button onclick="safeDel('library', ${l.id})" class="text-red-200 text-[11px]">削除</button>
-                            </div>
-                        </div>`).join('')}
-                </div>
+                ${gTopic[name].map(l => `
+                    <div class="bg-gray-50 p-4 rounded-2xl mb-2">
+                        <p class="text-sm text-gray-700 whitespace-pre-wrap mb-3">${l.text}</p>
+                        <div class="flex justify-end gap-3">
+                            <button onclick="citeToBody('${l.text.replace(/'/g, "\\'")}')" class="text-note font-bold text-[11px]">本文に挿入</button>
+                            <button onclick="safeDel('library', ${l.id})" class="text-red-200 text-[11px]">削除</button>
+                        </div>
+                    </div>`).join('')}
             </div>`).join('');
 
         // メモ
         document.getElementById('memoList').innerHTML = store.memos.map(m => `
             <div class="pb-6 border-b border-gray-50">
-                ${editingId === 'mem-'+m.id ? 
-                    `<textarea id="ed-m-${m.id}" class="w-full text-sm outline-none" rows="3">${m.text}</textarea><div class="flex justify-end gap-2 mt-2"><button onclick="clearEdit()" class="text-xs text-gray-400">中止</button><button onclick="applyEdit(${m.id}, 'memos', 'text', 'ed-m-${m.id}')" class="btn-black">保存</button></div>` :
-                    `<p class="text-sm mb-2 leading-relaxed">${m.text}</p>`}
-                ${m.image ? `<img src="${m.image}" class="w-full rounded-2xl mb-2 max-h-60 object-cover shadow-sm">` : ''}
-                <div class="flex justify-between items-center text-[10px] text-gray-300">
-                    <span>${new Date(m.id).toLocaleString()}</span>
+                <p class="text-sm mb-2 leading-relaxed">${m.text}</p>
+                ${m.image ? `<img src="${m.image}" class="w-full rounded-2xl mb-2 max-h-60 object-cover">` : ''}
+                <div class="flex justify-between items-center text-[10px]">
+                    <span class="text-gray-300">${new Date(m.id).toLocaleString()}</span>
                     <div class="flex gap-4">
-                        <button onclick="setEdit('mem-'+m.id)" class="text-note font-bold">編集</button>
+                        <button onclick="citeToBody('${m.text.replace(/'/g, "\\'")}')" class="text-note font-bold">挿入</button>
                         <button onclick="safeDel('memos', ${m.id})" class="text-red-200">削除</button>
                     </div>
                 </div>
             </div>`).join('');
 
         document.getElementById('avatarImg').src = store.avatar || "https://via.placeholder.com/100";
-        document.getElementById('profView').innerText = store.myProfile || "プロフィール未設定";
+        document.getElementById('profView').innerText = store.myProfile || "未設定";
         document.getElementById('apiKeyInput').value = store.apiKey || "";
-
         const sel = document.getElementById('editorStyleSelect');
         if(sel) sel.innerHTML = '<option value="">文体を選択なし</option>' + store.profiles.map(p => `<option value="${p.id}" ${store.activeProfileId == p.id ? 'selected' : ''}>${p.name}</option>`).join('');
-        
         renderGlobalChat();
         renderChat();
     }
@@ -440,13 +422,13 @@ ${proj?.content || "書き始め"}
     function applyEdit(id, type, field, inputId) { 
         const val = document.getElementById(inputId).value; 
         const item = store[type].find(x => String(x.id) === String(id)); 
-        if(item) { item[field] = val; showToast("更新しました"); }
+        if(item) { item[field] = val; }
         clearEdit(); 
         save(); 
     }
     
     function safeDel(type, id) { 
-        if(confirm("本当に削除しますか？")) { 
+        if(confirm("削除しますか？")) { 
             store[type] = store[type].filter(x => String(x.id) !== String(id)); 
             save(); 
         } 
@@ -468,7 +450,6 @@ ${proj?.content || "書き始め"}
     function updateActiveStyle() { store.activeProfileId = document.getElementById('editorStyleSelect').value; save(); }
     function autoGrow(el) { el.style.height = "auto"; el.style.height = el.scrollHeight + "px"; }
 
-    // ファイル解析 (inlineData対応)
     async function handleFile(input, type) { 
         const file=input.files[0]; if(!file||!store.apiKey) return showToast("APIキーが未設定です"); 
         const loadingId = type === 'style' ? 'styleLoading' : 'topicLoading';
@@ -488,12 +469,8 @@ ${proj?.content || "書き始め"}
                 if(type === 'style') document.getElementById('styleTextInput').value = text;
                 else document.getElementById('topicTextInput').value = text;
                 showToast("解析が完了しました");
-            } catch(e){
-                showToast("解析エラー: " + e.message);
-            } finally {
-                document.getElementById(loadingId).classList.add('hidden');
-                input.value = "";
-            } 
+            } catch(e){ showToast("解析エラー: " + e.message); } 
+            finally { document.getElementById(loadingId).classList.add('hidden'); input.value = ""; } 
         }; r.readAsDataURL(file);
     }
 
@@ -505,7 +482,7 @@ ${proj?.content || "書き始め"}
     }
     function renderGlobalChat() {
         const area = document.getElementById('globalChat'); if(!area) return;
-        area.innerHTML = store.globalChat.map(msg => `<div class="chat-bubble ${msg.role==='model'?'msg-ai':'msg-user'}">${msg.parts[0].text}</div>`).join('') + (store.globalChat.length > 0 ? `<div class="text-center pb-4 pt-4"><button onclick="resetChat('global')" class="text-red-300 text-[10px] font-bold">コンサル履歴をリセット</button></div>` : '');
+        area.innerHTML = store.globalChat.map(msg => `<div class="chat-bubble ${msg.role==='model'?'msg-ai':'msg-user'}">${msg.parts[0].text}</div>`).join('') + (store.globalChat.length > 0 ? `<div class="text-center pb-4 pt-4"><button onclick="resetChat('global')" class="text-red-300 text-[10px] font-bold">履歴リセット</button></div>` : '');
         setTimeout(() => area.lastElementChild?.scrollIntoView({ behavior: 'smooth' }), 50);
     }
 
